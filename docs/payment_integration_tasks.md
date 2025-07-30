@@ -20,7 +20,7 @@ This document outlines the tasks required to implement a payment integration mod
 
 ### Database Files
 - `db/payment_integration_migration.sql` - SQL migration for payment tables
-- `db/feature_toggles_payment_integration.sql` - SQL for adding payment toggle to feature toggles
+- `db/base_feature_toggles_payment_integration.sql` - SQL for adding payment toggle to feature toggles
 
 ### Config and Documentation
 - `docs/payment_integration.md` - Documentation for using the payment integration module
@@ -35,9 +35,9 @@ This document outlines the tasks required to implement a payment integration mod
 ## Tasks
 
 - [x] 1.0 Database Setup for Payment Integration
-  - [x] 1.1 Create payment_qr_codes table to store uploaded QR code data
-  - [x] 1.2 Create payment_transactions table to track payment activities
-  - [x] 1.3 Add payment integration feature toggle to feature_toggles table
+  - [x] 1.1 Create base_payment_qr_codes table to store uploaded QR code data
+  - [x] 1.2 Create base_payment_transactions table to track payment activities
+  - [x] 1.3 Add payment integration feature toggle to base_feature_toggles table
   - [x] 1.4 Create SQL scripts for initial data population
   - [ ] 1.5 Update database documentation with new tables
 
@@ -77,7 +77,7 @@ This document outlines the tasks required to implement a payment integration mod
 
 ```sql
 -- Payment QR Codes Table
-CREATE TABLE IF NOT EXISTS payment_qr_codes (
+CREATE TABLE IF NOT EXISTS base_payment_qr_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     payment_name VARCHAR(100) NOT NULL,
     payment_description TEXT,
@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS payment_qr_codes (
 );
 
 -- Payment Transactions Table
-CREATE TABLE IF NOT EXISTS payment_transactions (
+CREATE TABLE IF NOT EXISTS base_payment_transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     transaction_reference VARCHAR(100) NOT NULL UNIQUE,
     amount DECIMAL(10, 2) NOT NULL,
@@ -103,26 +103,26 @@ CREATE TABLE IF NOT EXISTS payment_transactions (
     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     transaction_notes TEXT,
     transaction_metadata TEXT, -- JSON field for additional data
-    FOREIGN KEY (qr_code_id) REFERENCES payment_qr_codes(id),
+    FOREIGN KEY (qr_code_id) REFERENCES base_payment_qr_codes(id),
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
--- Add payment feature to feature_toggles table
-INSERT INTO feature_toggles (name, description, is_enabled, feature)
+-- Add payment feature to base_feature_toggles table
+INSERT INTO base_feature_toggles (name, description, is_enabled, feature)
 VALUES ('payment_integration', 'Enable payment integration with QR code support', 0, 'payment');
 ```
 
 ## Sample Data
 
 ```sql
--- Sample data for payment_qr_codes
-INSERT INTO payment_qr_codes (payment_name, payment_description, qr_code_image, qr_code_path, payment_type, is_active, created_by)
+-- Sample data for base_payment_qr_codes
+INSERT INTO base_payment_qr_codes (payment_name, payment_description, qr_code_image, qr_code_path, payment_type, is_active, created_by)
 VALUES 
 ('Default UPI QR', 'Default UPI payment QR code', X'00112233', '/uploads/qr/default_upi.png', 'UPI', 1, 1),
 ('Corporate Account QR', 'Corporate bank account QR code', X'44556677', '/uploads/qr/corporate.png', 'BANK', 0, 1);
 
--- Sample data for payment_transactions
-INSERT INTO payment_transactions (transaction_reference, amount, currency, payment_status, qr_code_id, user_id, transaction_notes)
+-- Sample data for base_payment_transactions
+INSERT INTO base_payment_transactions (transaction_reference, amount, currency, payment_status, qr_code_id, user_id, transaction_notes)
 VALUES 
 ('TXN123456789', 1000.00, 'INR', 'COMPLETED', 1, 2, 'Test transaction'),
 ('TXN987654321', 1500.50, 'INR', 'PENDING', 1, 3, 'Awaiting confirmation'),

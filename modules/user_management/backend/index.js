@@ -102,7 +102,7 @@ router.get('/users', authenticateToken, checkPermissions(['user_view']), async (
         u.is_active,
         u.created_at,
         u.updated_at
-      FROM users_master u
+      FROM base_users_master u
     `;
     
     // Build WHERE clause based on filters
@@ -144,8 +144,8 @@ router.get('/users', authenticateToken, checkPermissions(['user_view']), async (
     for (const user of users) {
       const roles = await dbMethods.all(db, 
         `SELECT r.role_id, r.name 
-         FROM roles_master r 
-         JOIN user_roles_tx ur ON r.role_id = ur.role_id 
+         FROM base_roles_master r 
+         JOIN base_user_roles_tx ur ON r.role_id = ur.role_id 
          WHERE ur.user_id = ?`,
         [user.user_id]
       );
@@ -219,7 +219,7 @@ router.post('/users', [
     
     // Check if email or mobile already exists
     const existingUser = await dbMethods.get(db, 
-      'SELECT user_id FROM users_master WHERE email = ? OR mobile_number = ?', 
+      'SELECT user_id FROM base_base_users_master WHERE email = ? OR mobile_number = ?', 
       [email, mobile_number]
     );
     
@@ -233,7 +233,7 @@ router.post('/users', [
     
     // Create new user
     const result = await dbMethods.run(db, 
-      `INSERT INTO users_master (first_name, last_name, email, mobile_number, password_hash, is_active) 
+      `INSERT INTO base_base_users_master (first_name, last_name, email, mobile_number, password_hash, is_active) 
        VALUES (?, ?, ?, ?, ?, 1)`, 
       [first_name, last_name, email, mobile_number, hashedPassword]
     );
@@ -244,16 +244,16 @@ router.post('/users', [
     if (roles && roles.length > 0) {
       for (const roleId of roles) {
         await dbMethods.run(db, 
-          'INSERT INTO user_roles_tx (user_id, role_id) VALUES (?, ?)',
+          'INSERT INTO base_user_roles_tx (user_id, role_id) VALUES (?, ?)',
           [newUserId, roleId]
         );
       }
     } else {
       // Assign default 'User' role if no roles specified
-      const defaultRole = await dbMethods.get(db, 'SELECT role_id FROM roles_master WHERE name = ?', ['User']);
+      const defaultRole = await dbMethods.get(db, 'SELECT role_id FROM base_roles_master WHERE name = ?', ['User']);
       if (defaultRole) {
         await dbMethods.run(db, 
-          'INSERT INTO user_roles_tx (user_id, role_id) VALUES (?, ?)',
+          'INSERT INTO base_user_roles_tx (user_id, role_id) VALUES (?, ?)',
           [newUserId, defaultRole.role_id]
         );
       }
@@ -299,7 +299,7 @@ router.get('/users/:id', authenticateToken, checkPermissions(['user_view']), asy
     // Get user data
     const user = await dbMethods.get(db, 
       `SELECT user_id, first_name, last_name, email, mobile_number, is_active, created_at, updated_at 
-       FROM users_master WHERE user_id = ?`, 
+       FROM base_base_users_master WHERE user_id = ?`, 
       [userId]
     );
     
@@ -310,8 +310,8 @@ router.get('/users/:id', authenticateToken, checkPermissions(['user_view']), asy
     // Get user roles
     const roles = await dbMethods.all(db, 
       `SELECT r.role_id, r.name 
-       FROM roles_master r 
-       JOIN user_roles_tx ur ON r.role_id = ur.role_id 
+       FROM base_roles_master r 
+       JOIN base_user_roles_tx ur ON r.role_id = ur.role_id 
        WHERE ur.user_id = ?`,
       [userId]
     );
@@ -366,7 +366,7 @@ router.put('/users/:id', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if user exists
-    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM users_master WHERE user_id = ?', [userId]);
+    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM base_base_users_master WHERE user_id = ?', [userId]);
     if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -374,7 +374,7 @@ router.put('/users/:id', [
     // Check if email or mobile belongs to another user
     if (email) {
       const userWithEmail = await dbMethods.get(db, 
-        'SELECT user_id FROM users_master WHERE email = ? AND user_id != ?', 
+        'SELECT user_id FROM base_base_users_master WHERE email = ? AND user_id != ?', 
         [email, userId]
       );
       if (userWithEmail) {
@@ -384,7 +384,7 @@ router.put('/users/:id', [
     
     if (mobile_number) {
       const userWithMobile = await dbMethods.get(db, 
-        'SELECT user_id FROM users_master WHERE mobile_number = ? AND user_id != ?', 
+        'SELECT user_id FROM base_base_users_master WHERE mobile_number = ? AND user_id != ?', 
         [mobile_number, userId]
       );
       if (userWithMobile) {
@@ -423,7 +423,7 @@ router.put('/users/:id', [
     if (updateFields.length > 0) {
       updateValues.push(userId);
       await dbMethods.run(db, 
-        `UPDATE users_master SET ${updateFields.join(', ')} WHERE user_id = ?`, 
+        `UPDATE base_base_users_master SET ${updateFields.join(', ')} WHERE user_id = ?`, 
         updateValues
       );
     }
@@ -431,12 +431,12 @@ router.put('/users/:id', [
     // Update roles if provided
     if (roles) {
       // Delete existing roles first
-      await dbMethods.run(db, 'DELETE FROM user_roles_tx WHERE user_id = ?', [userId]);
+      await dbMethods.run(db, 'DELETE FROM base_user_roles_tx WHERE user_id = ?', [userId]);
       
       // Add new roles
       for (const roleId of roles) {
         await dbMethods.run(db, 
-          'INSERT INTO user_roles_tx (user_id, role_id) VALUES (?, ?)', 
+          'INSERT INTO base_user_roles_tx (user_id, role_id) VALUES (?, ?)', 
           [userId, roleId]
         );
       }
@@ -489,14 +489,14 @@ router.patch('/users/:id/status', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if user exists
-    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM users_master WHERE user_id = ?', [userId]);
+    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM base_base_users_master WHERE user_id = ?', [userId]);
     if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Update user status
     await dbMethods.run(db, 
-      'UPDATE users_master SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', 
+      'UPDATE base_base_users_master SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', 
       [is_active ? 1 : 0, userId]
     );
     
@@ -540,7 +540,7 @@ router.delete('/users/:id', authenticateToken, checkPermissions(['user_delete'])
     
     // Check if user exists
     const existingUser = await dbMethods.get(db, 
-      'SELECT user_id, email FROM users_master WHERE user_id = ?', 
+      'SELECT user_id, email FROM base_base_users_master WHERE user_id = ?', 
       [userId]
     );
     
@@ -550,9 +550,9 @@ router.delete('/users/:id', authenticateToken, checkPermissions(['user_delete'])
     
     // Don't allow deletion of the admin user
     const adminUser = await dbMethods.get(db, 
-      `SELECT u.user_id FROM users_master u 
-       JOIN user_roles_tx ur ON u.user_id = ur.user_id 
-       JOIN roles_master r ON ur.role_id = r.role_id 
+      `SELECT u.user_id FROM base_base_users_master u 
+       JOIN base_user_roles_tx ur ON u.user_id = ur.user_id 
+       JOIN base_roles_master r ON ur.role_id = r.role_id 
        WHERE u.user_id = ? AND r.name = 'Admin'`, 
       [userId]
     );
@@ -561,9 +561,9 @@ router.delete('/users/:id', authenticateToken, checkPermissions(['user_delete'])
       return res.status(403).json({ error: 'Cannot delete the primary administrator account' });
     }
     
-    // Because of ON DELETE CASCADE constraints, deleting from users_master 
+    // Because of ON DELETE CASCADE constraints, deleting from base_base_users_master 
     // will automatically delete related records in other tables
-    await dbMethods.run(db, 'DELETE FROM users_master WHERE user_id = ?', [userId]);
+    await dbMethods.run(db, 'DELETE FROM base_base_users_master WHERE user_id = ?', [userId]);
     
     // Log activity
     eventBus.emit('log:activity', {
@@ -725,7 +725,7 @@ async function processUserRow(row, db, results, eventBus, createdBy) {
     }
     // Check if email already exists
     const existingUser = await dbMethods.get(db, 
-      'SELECT user_id FROM users_master WHERE email = ?', 
+      'SELECT user_id FROM base_users_master WHERE email = ?', 
       [row.email]
     );
     
@@ -748,7 +748,7 @@ async function processUserRow(row, db, results, eventBus, createdBy) {
     
     // Create user
     const result = await dbMethods.run(db, 
-      `INSERT INTO users_master (first_name, last_name, email, mobile_number, password_hash, is_active) 
+      `INSERT INTO base_users_master (first_name, last_name, email, mobile_number, password_hash, is_active) 
        VALUES (?, ?, ?, ?, ?, ?)`, 
       [row.firstName, row.lastName, row.email, row.mobileNumber || null, hashedPassword, isActive ? 1 : 0]
     );
@@ -761,13 +761,13 @@ async function processUserRow(row, db, results, eventBus, createdBy) {
     // Find role IDs from role names
     for (const roleName of roleNames) {
       const roleRecord = await dbMethods.get(db, 
-        'SELECT role_id FROM roles_master WHERE name = ?', 
+        'SELECT role_id FROM base_roles_master WHERE name = ?', 
         [roleName]
       );
       
       if (roleRecord) {
         await dbMethods.run(db, 
-          'INSERT INTO user_roles_tx (user_id, role_id) VALUES (?, ?)',
+          'INSERT INTO base_user_roles_tx (user_id, role_id) VALUES (?, ?)',
           [newUserId, roleRecord.role_id]
         );
       } else {

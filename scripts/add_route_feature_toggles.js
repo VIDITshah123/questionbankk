@@ -1,6 +1,6 @@
 /**
  * Script to add all application routes as feature toggles
- * Usage: node add_route_feature_toggles.js
+ * Usage: node add_route_base_feature_toggles.js
  * 
  * This script will:
  * 1. Add all application routes as feature toggles
@@ -34,7 +34,7 @@ const applicationRoutes = [
   { name: 'roles_create', display_name: 'Create Role', description: 'Create new roles', enabled: true },
   { name: 'roles_edit', display_name: 'Edit Role', description: 'Edit existing roles', enabled: true },
   { name: 'roles_bulk_upload', display_name: 'Bulk Role Upload', description: 'Upload roles in bulk', enabled: true },
-  { name: 'roles_feature_toggles', display_name: 'Feature Toggle Management', description: 'Manage feature toggles', enabled: true },
+  { name: 'roles_base_feature_toggles', display_name: 'Feature Toggle Management', description: 'Manage feature toggles', enabled: true },
   
   // Permission management routes
   { name: 'permissions_list', display_name: 'Permission List', description: 'View and manage permissions', enabled: true },
@@ -76,7 +76,7 @@ async function ensureFeatureToggle(route) {
   try {
     // Check if feature toggle already exists
     const existing = await getQuery(
-      'SELECT * FROM feature_toggles WHERE feature_name = ?', 
+      'SELECT * FROM base_feature_toggles WHERE feature_name = ?', 
       [`route_${route.name}`]
     );
     
@@ -87,7 +87,7 @@ async function ensureFeatureToggle(route) {
     
     // Insert new feature toggle
     await runQuery(
-      'INSERT INTO feature_toggles (feature_name, description, enabled, created_at, updated_at) VALUES (?, ?, ?, datetime("now"), datetime("now"))',
+      'INSERT INTO base_feature_toggles (feature_name, description, enabled, created_at, updated_at) VALUES (?, ?, ?, datetime("now"), datetime("now"))',
       [`route_${route.name}`, `Feature toggle for ${route.display_name} route`, route.enabled ? 1 : 0]
     );
     
@@ -95,7 +95,7 @@ async function ensureFeatureToggle(route) {
     
     // Get the newly created feature toggle
     const newToggle = await getQuery(
-      'SELECT * FROM feature_toggles WHERE feature_name = ?', 
+      'SELECT * FROM base_feature_toggles WHERE feature_name = ?', 
       [`route_${route.name}`]
     );
     

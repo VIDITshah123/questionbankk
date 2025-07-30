@@ -22,7 +22,7 @@ async function verifyLogin() {
     
     // Find user by email (simulating login)
     db.get(
-      'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM users_master WHERE email = ?',
+      'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM base_users_master WHERE email = ?',
       [testUser.email],
       async (err, user) => {
         if (err) {
@@ -49,10 +49,10 @@ async function verifyLogin() {
           // Get user roles and permissions
           db.all(
             `SELECT r.name as role_name, p.name as permission_name
-             FROM user_roles_tx ur
-             JOIN roles_master r ON ur.role_id = r.role_id
-             LEFT JOIN role_permissions_tx rp ON r.role_id = rp.role_id
-             LEFT JOIN permissions_master p ON rp.permission_id = p.permission_id
+             FROM base_user_roles_tx ur
+             JOIN base_roles_master r ON ur.role_id = r.role_id
+             LEFT JOIN base_role_permissions_tx rp ON r.role_id = rp.role_id
+             LEFT JOIN base_permissions_master p ON rp.permission_id = p.permission_id
              WHERE ur.user_id = ?`,
             [user.user_id],
             (err, userRolesAndPermissions) => {

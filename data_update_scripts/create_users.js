@@ -53,7 +53,7 @@ const users = [
 async function createUsers() {
   try {
     // Get User role ID
-    db.get('SELECT role_id FROM roles_master WHERE name = ?', ['User'], async (err, role) => {
+    db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['User'], async (err, role) => {
       if (err) {
         console.error('Error retrieving User role:', err.message);
         db.close();
@@ -78,7 +78,7 @@ async function createUsers() {
           
           // Insert user
           db.run(
-            'INSERT INTO users_master (mobile_number, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO base_users_master (mobile_number, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
             [user.mobile_number, user.email, hashedPassword, user.first_name, user.last_name],
             function(err) {
               if (err) {
@@ -91,7 +91,7 @@ async function createUsers() {
               
               // Assign User role
               db.run(
-                'INSERT INTO user_roles_tx (user_id, role_id) VALUES (?, ?)',
+                'INSERT INTO base_user_roles_tx (user_id, role_id) VALUES (?, ?)',
                 [userId, userRoleId],
                 function(err) {
                   if (err) {

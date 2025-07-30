@@ -70,12 +70,12 @@ async function createFullAccessRoleAndUser() {
     console.log('Starting creation of full_access role and FA user...');
     
     // 1. Get all existing permissions
-    const permissions = await all('SELECT * FROM permissions_master');
+    const permissions = await all('SELECT * FROM base_permissions_master');
     console.log(`Found ${permissions.length} permissions in the system`);
     
     // 2. Create the full_access role
     console.log('Creating full_access role...');
-    const roleExists = await get('SELECT * FROM roles_master WHERE name = ?', ['full_access']);
+    const roleExists = await get('SELECT * FROM base_roles_master WHERE name = ?', ['full_access']);
     
     let roleId;
     if (roleExists) {
@@ -83,7 +83,7 @@ async function createFullAccessRoleAndUser() {
       roleId = roleExists.role_id;
     } else {
       roleId = await run(
-        'INSERT INTO roles_master (name, description, created_at, updated_at) VALUES (?, ?, datetime("now"), datetime("now"))',
+        'INSERT INTO base_roles_master (name, description, created_at, updated_at) VALUES (?, ?, datetime("now"), datetime("now"))',
         ['full_access', 'Role with access to all functionality']
       );
       console.log('Created new role full_access with ID:', roleId);
@@ -92,19 +92,19 @@ async function createFullAccessRoleAndUser() {
     // 3. Assign all permissions to the role
     console.log('Assigning all permissions to full_access role...');
     // First, clear existing permissions
-    await run('DELETE FROM role_permissions_tx WHERE role_id = ?', [roleId]);
+    await run('DELETE FROM base_role_permissions_tx WHERE role_id = ?', [roleId]);
     
     // Then assign all permissions
     for (const permission of permissions) {
       await run(
-        'INSERT INTO role_permissions_tx (role_id, permission_id, created_at) VALUES (?, ?, datetime("now"))',
+        'INSERT INTO base_role_permissions_tx (role_id, permission_id, created_at) VALUES (?, ?, datetime("now"))',
         [roleId, permission.permission_id]
       );
     }
     
     // 4. Create FA user if they don't exist
     console.log('Creating FA user...');
-    const userExists = await get('SELECT * FROM users_master WHERE mobile_number = ?', ['8888888888']);
+    const userExists = await get('SELECT * FROM base_users_master WHERE mobile_number = ?', ['8888888888']);
     
     let userId;
     if (userExists) {
@@ -114,7 +114,7 @@ async function createFullAccessRoleAndUser() {
       // Update password
       const passwordHash = await bcrypt.hash('User@123', 10);
       await run(
-        'UPDATE users_master SET password_hash = ?, updated_at = datetime("now") WHERE user_id = ?',
+        'UPDATE base_users_master SET password_hash = ?, updated_at = datetime("now") WHERE user_id = ?',
         [passwordHash, userId]
       );
       console.log('Updated password for user FA');
@@ -124,7 +124,7 @@ async function createFullAccessRoleAndUser() {
       
       // Insert new user
       userId = await run(
-        `INSERT INTO users_master 
+        `INSERT INTO base_users_master 
          (mobile_number, password_hash, email, first_name, last_name, is_active, created_at, updated_at) 
          VALUES (?, ?, ?, ?, ?, ?, datetime("now"), datetime("now"))`,
         ['8888888888', passwordHash, 'fa@employdex.com', 'FA', 'User', 1]
@@ -136,13 +136,13 @@ async function createFullAccessRoleAndUser() {
     console.log('Assigning full_access role to FA user...');
     // Check if role assignment already exists
     const roleAssignmentExists = await get(
-      'SELECT * FROM user_roles_tx WHERE user_id = ? AND role_id = ?', 
+      'SELECT * FROM base_user_roles_tx WHERE user_id = ? AND role_id = ?', 
       [userId, roleId]
     );
     
     if (!roleAssignmentExists) {
       await run(
-        'INSERT INTO user_roles_tx (user_id, role_id, created_at) VALUES (?, ?, datetime("now"))',
+        'INSERT INTO base_user_roles_tx (user_id, role_id, created_at) VALUES (?, ?, datetime("now"))',
         [userId, roleId]
       );
       console.log('Assigned full_access role to user FA');

@@ -28,7 +28,7 @@ const registerModuleEvents = (eventBus) => {
       
       // Insert log entry into database
       await dbMethods.run(db, 
-        `INSERT INTO activity_logs_tx (user_id, action, details, ip_address, user_agent) 
+        `INSERT INTO base_activity_logs_tx (user_id, action, details, ip_address, user_agent) 
          VALUES (?, ?, ?, ?, ?)`,
         [logEntry.user_id, logEntry.action, logEntry.details, logEntry.ip_address, logEntry.user_agent]
       );
@@ -56,7 +56,7 @@ const registerModuleEvents = (eventBus) => {
       
       // Insert log entry into database
       await dbMethods.run(db, 
-        `INSERT INTO activity_logs_tx (user_id, action, details, ip_address, user_agent) 
+        `INSERT INTO base_activity_logs_tx (user_id, action, details, ip_address, user_agent) 
          VALUES (?, ?, ?, ?, ?)`,
         [logEntry.user_id, logEntry.action, logEntry.details, logEntry.ip_address, logEntry.user_agent]
       );
@@ -141,11 +141,11 @@ router.get('/activity', [
         al.ip_address, 
         al.user_agent, 
         al.created_at
-      FROM activity_logs_tx al
-      LEFT JOIN users_master u ON al.user_id = u.user_id
+      FROM base_activity_logs_tx al
+      LEFT JOIN base_users_master u ON al.user_id = u.user_id
     `;
     
-    let countQuery = 'SELECT COUNT(*) as total FROM activity_logs_tx al';
+    let countQuery = 'SELECT COUNT(*) as total FROM base_activity_logs_tx al';
     
     // Build WHERE clause based on filters
     const whereConditions = [];
@@ -234,7 +234,7 @@ router.get('/actions', authenticateToken, checkPermissions(['permission_view']),
     
     // Get unique action types
     const actions = await dbMethods.all(db, 
-      'SELECT DISTINCT action FROM activity_logs_tx ORDER BY action',
+      'SELECT DISTINCT action FROM base_activity_logs_tx ORDER BY action',
       []
     );
     
@@ -268,7 +268,7 @@ router.get('/entities', authenticateToken, checkPermissions(['permission_view'])
            WHEN details LIKE '%feature%' THEN 'Feature Toggle'
            ELSE 'System'
          END as entity_type
-       FROM activity_logs_tx
+       FROM base_activity_logs_tx
        ORDER BY entity_type`,
       []
     );
@@ -313,7 +313,7 @@ router.get('/stats', authenticateToken, (req, res, next) => {
     
     // Get action counts
     const actionCounts = await dbMethods.all(db, 
-      'SELECT action, COUNT(*) as count FROM activity_logs_tx GROUP BY action ORDER BY count DESC',
+      'SELECT action, COUNT(*) as count FROM base_activity_logs_tx GROUP BY action ORDER BY count DESC',
       []
     );
     
@@ -333,7 +333,7 @@ router.get('/stats', authenticateToken, (req, res, next) => {
       `SELECT 
         DATE(created_at) as date,
         COUNT(*) as count
-      FROM activity_logs_tx
+      FROM base_activity_logs_tx
       WHERE created_at >= DATE('now', '-7 days')
       GROUP BY DATE(created_at)
       ORDER BY date`,
@@ -362,8 +362,8 @@ router.get('/stats', authenticateToken, (req, res, next) => {
           ELSE 'Unknown User' 
         END as user_name,
         COUNT(*) as action_count
-      FROM activity_logs_tx al
-      LEFT JOIN users_master u ON al.user_id = u.user_id
+      FROM base_activity_logs_tx al
+      LEFT JOIN base_users_master u ON al.user_id = u.user_id
       GROUP BY al.user_id
       ORDER BY action_count DESC
       LIMIT 5`,

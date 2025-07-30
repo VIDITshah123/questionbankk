@@ -72,7 +72,7 @@ router.post('/register', [
   try {
     // Check if user already exists
     db.get(
-      'SELECT user_id FROM users_master WHERE email = ? OR mobile_number = ?',
+      'SELECT user_id FROM base_users_master WHERE email = ? OR mobile_number = ?',
       [email, mobile_number],
       async (err, user) => {
         if (err) {
@@ -90,7 +90,7 @@ router.post('/register', [
         
         // Insert new user
         db.run(
-          'INSERT INTO users_master (mobile_number, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
+          'INSERT INTO base_users_master (mobile_number, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
           [mobile_number, email, hashedPassword, first_name, last_name],
           function (err) {
             if (err) {
@@ -101,13 +101,13 @@ router.post('/register', [
             const userId = this.lastID;
             
             // Assign default User role to new user
-            db.get('SELECT role_id FROM roles_master WHERE name = ?', ['User'], (err, role) => {
+            db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['User'], (err, role) => {
               if (err || !role) {
                 console.error('Error getting User role:', err);
                 // Continue even if role assignment fails
               } else {
                 db.run(
-                  'INSERT INTO user_roles_tx (user_id, role_id) VALUES (?, ?)',
+                  'INSERT INTO base_user_roles_tx (user_id, role_id) VALUES (?, ?)',
                   [userId, role.role_id],
                   (err) => {
                     if (err) {
@@ -120,7 +120,7 @@ router.post('/register', [
             
             // Log the user registration event
             db.run(
-              'INSERT INTO activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
+              'INSERT INTO base_activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
               [
                 userId,
                 'REGISTER',
@@ -173,10 +173,10 @@ router.post('/login', [
     // Get user roles and permissions
     db.all(
       `SELECT r.name as role_name, p.name as permission_name
-       FROM user_roles_tx ur
-       JOIN roles_master r ON ur.role_id = r.role_id
-       LEFT JOIN role_permissions_tx rp ON r.role_id = rp.role_id
-       LEFT JOIN permissions_master p ON rp.permission_id = p.permission_id
+       FROM base_user_roles_tx ur
+       JOIN base_roles_master r ON ur.role_id = r.role_id
+       LEFT JOIN base_role_permissions_tx rp ON r.role_id = rp.role_id
+       LEFT JOIN base_permissions_master p ON rp.permission_id = p.permission_id
        WHERE ur.user_id = ?`,
       [user.user_id],
       (err, userRolesAndPermissions) => {
@@ -212,7 +212,7 @@ router.post('/login', [
           
           // Log login event
           db.run(
-            'INSERT INTO activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO base_activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
             [
               user.user_id,
               'LOGIN',
@@ -244,7 +244,7 @@ router.post('/login', [
       console.log('Admin login attempt');
       // Use the hardcoded query for admin username
       db.get(
-        'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM users_master LIMIT 1',
+        'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM base_users_master LIMIT 1',
         [],
         async (err, user) => {
           if (err) {
@@ -278,8 +278,8 @@ router.post('/login', [
     // Regular case - Find user by email or mobile number
     const isEmail = username.includes('@');
     const query = isEmail ? 
-      'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM users_master WHERE email = ?' :
-      'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM users_master WHERE mobile_number = ?';
+      'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM base_users_master WHERE email = ?' :
+      'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM base_users_master WHERE mobile_number = ?';
     const params = isEmail ? [username] : [username];
     
     console.log('Regular login attempt:', { username, isEmail, query, params });
@@ -337,7 +337,7 @@ router.post('/forgot-password', [
   
   try {
     // Check if user exists
-    db.get('SELECT user_id FROM users_master WHERE email = ?', [email], (err, user) => {
+    db.get('SELECT user_id FROM base_users_master WHERE email = ?', [email], (err, user) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ error: 'Database error' });
@@ -361,7 +361,7 @@ router.post('/forgot-password', [
       
       // Log the password reset request
       db.run(
-        'INSERT INTO activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO base_activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
         [
           user.user_id,
           'PASSWORD_RESET_REQUEST',
@@ -420,7 +420,7 @@ router.post('/reset-password', [
       
       // Update password in database
       db.run(
-        'UPDATE users_master SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+        'UPDATE base_users_master SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
         [hashedPassword, userId],
         function (err) {
           if (err) {
@@ -434,7 +434,7 @@ router.post('/reset-password', [
           
           // Log password reset event
           db.run(
-            'INSERT INTO activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO base_activity_logs_tx (user_id, action, details, ip_address, user_agent) VALUES (?, ?, ?, ?, ?)',
             [
               userId,
               'PASSWORD_RESET',
@@ -466,7 +466,7 @@ router.get('/me', authenticateToken, (req, res) => {
   const db = req.app.locals.db;
   
   db.get(
-    'SELECT user_id, email, first_name, last_name, mobile_number, is_active FROM users_master WHERE user_id = ?',
+    'SELECT user_id, email, first_name, last_name, mobile_number, is_active FROM base_users_master WHERE user_id = ?',
     [userId],
     (err, user) => {
       if (err) {

@@ -14,7 +14,7 @@ const newPasswordHash = '$2a$10$LjZl9CjeQFg1nrz8KvTYlOC.Nvsr5loM2qHbppZrbksSBPbF
 
 // Update the admin user's password
 db.run(
-  'UPDATE users_master SET password_hash = ? WHERE email = ?',
+  'UPDATE base_users_master SET password_hash = ? WHERE email = ?',
   [newPasswordHash, 'admin@employdex.com'],
   function(err) {
     if (err) {

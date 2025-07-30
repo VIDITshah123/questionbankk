@@ -13,7 +13,7 @@ const db = new sqlite3.Database('./db/employdex-base.db', (err) => {
 async function resetUsers() {
   try {
     // Get admin user ID
-    db.get('SELECT user_id FROM users_master WHERE email = ?', ['admin@employdex.com'], (err, adminUser) => {
+    db.get('SELECT user_id FROM base_users_master WHERE email = ?', ['admin@employdex.com'], (err, adminUser) => {
       if (err) {
         console.error('Error retrieving admin user:', err.message);
         db.close();
@@ -31,7 +31,7 @@ async function resetUsers() {
       
       // Delete all user_roles for non-admin users
       db.run(
-        'DELETE FROM user_roles_tx WHERE user_id != ?',
+        'DELETE FROM base_user_roles_tx WHERE user_id != ?',
         [adminId],
         function(err) {
           if (err) {
@@ -43,7 +43,7 @@ async function resetUsers() {
           
           // Delete all non-admin users
           db.run(
-            'DELETE FROM users_master WHERE user_id != ?',
+            'DELETE FROM base_users_master WHERE user_id != ?',
             [adminId],
             function(err) {
               if (err) {

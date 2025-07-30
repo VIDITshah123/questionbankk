@@ -101,7 +101,7 @@ async function hashPassword(password) {
 // Helper function to get a permission ID by name
 function getPermissionId(permissionName) {
   return new Promise((resolve, reject) => {
-    db.get('SELECT permission_id FROM permissions_master WHERE name = ?', [permissionName], (err, result) => {
+    db.get('SELECT permission_id FROM base_permissions_master WHERE name = ?', [permissionName], (err, result) => {
       if (err) reject(err);
       else resolve(result ? result.permission_id : null);
     });
@@ -111,7 +111,7 @@ function getPermissionId(permissionName) {
 // Check if a role exists
 function checkRoleExists(roleName) {
   return new Promise((resolve, reject) => {
-    db.get('SELECT role_id FROM roles_master WHERE name = ?', [roleName], (err, result) => {
+    db.get('SELECT role_id FROM base_roles_master WHERE name = ?', [roleName], (err, result) => {
       if (err) reject(err);
       else resolve(result ? result.role_id : null);
     });
@@ -128,7 +128,7 @@ async function ensureRoleExists(roleData) {
 
   return new Promise((resolve, reject) => {
     db.run(
-      'INSERT INTO roles_master (name, description) VALUES (?, ?)',
+      'INSERT INTO base_roles_master (name, description) VALUES (?, ?)',
       [roleData.name, roleData.description],
       async function(err) {
         if (err) {
@@ -150,7 +150,7 @@ async function ensureRoleExists(roleData) {
             
             await new Promise((resolvePermission, rejectPermission) => {
               db.run(
-                'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
+                'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
                 [newRoleId, permissionId],
                 (err) => {
                   if (err) rejectPermission(err);
@@ -178,7 +178,7 @@ async function createUser(userData, roleId) {
     
     // Check if user already exists
     const existingUser = await new Promise((resolve, reject) => {
-      db.get('SELECT user_id FROM users_master WHERE email = ?', [userData.email], (err, user) => {
+      db.get('SELECT user_id FROM base_users_master WHERE email = ?', [userData.email], (err, user) => {
         if (err) reject(err);
         else resolve(user);
       });
@@ -192,7 +192,7 @@ async function createUser(userData, roleId) {
     // Insert the user
     const userId = await new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO users_master (mobile_number, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO base_users_master (mobile_number, email, password_hash, first_name, last_name) VALUES (?, ?, ?, ?, ?)',
         [userData.mobile, userData.email, hashedPassword, userData.firstName, userData.lastName],
         function(err) {
           if (err) reject(err);
@@ -206,7 +206,7 @@ async function createUser(userData, roleId) {
     // Assign role to the user
     await new Promise((resolve, reject) => {
       db.run(
-        'INSERT INTO user_roles_tx (user_id, role_id) VALUES (?, ?)',
+        'INSERT INTO base_user_roles_tx (user_id, role_id) VALUES (?, ?)',
         [userId, roleId],
         (err) => {
           if (err) reject(err);

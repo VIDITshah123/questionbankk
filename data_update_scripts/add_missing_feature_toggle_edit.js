@@ -26,7 +26,7 @@ function addFeatureToggleEditPermission() {
   console.log('Adding feature_toggle_edit permission to Admin role...');
   
   // First, get the Admin role ID
-  db.get('SELECT role_id FROM roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
+  db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
     if (err) {
       console.error('Error getting Admin role:', err.message);
       db.close();
@@ -43,7 +43,7 @@ function addFeatureToggleEditPermission() {
     console.log(`Found Admin role with ID: ${adminRoleId}`);
     
     // Next, get the feature_toggle_edit permission ID
-    db.get('SELECT permission_id FROM permissions_master WHERE name = ?', ['feature_toggle_edit'], (err, permission) => {
+    db.get('SELECT permission_id FROM base_permissions_master WHERE name = ?', ['feature_toggle_edit'], (err, permission) => {
       if (err) {
         console.error('Error getting feature_toggle_edit permission:', err.message);
         db.close();
@@ -61,7 +61,7 @@ function addFeatureToggleEditPermission() {
       
       // Check if the permission is already assigned to the Admin role
       db.get(
-        'SELECT * FROM role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
+        'SELECT * FROM base_role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
         [adminRoleId, permissionId], 
         (err, existingAssignment) => {
           if (err) {
@@ -78,7 +78,7 @@ function addFeatureToggleEditPermission() {
           
           // Add the permission to the Admin role
           db.run(
-            'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
+            'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
             [adminRoleId, permissionId], 
             function(err) {
               if (err) {

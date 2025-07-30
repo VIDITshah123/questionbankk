@@ -66,7 +66,7 @@ const checkPaymentFeatureEnabled = async (req, res, next) => {
   try {
     const db = req.app.locals.db;
     const featureToggle = await dbMethods.get(db, 
-      'SELECT is_enabled FROM feature_toggles WHERE feature_name = ?', 
+      'SELECT is_enabled FROM base_feature_toggles WHERE feature_name = ?', 
       ['payment_integration']
     );
 
@@ -97,9 +97,9 @@ const init = (app) => {
 // Create necessary database tables if they don't exist
 const initializeDatabase = async (db) => {
   try {
-    // Create payment_qr_codes table if it doesn't exist
+    // Create base_payment_qr_codes table if it doesn't exist
     await dbMethods.run(db, `
-      CREATE TABLE IF NOT EXISTS payment_qr_codes (
+      CREATE TABLE IF NOT EXISTS base_payment_qr_codes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
@@ -112,9 +112,9 @@ const initializeDatabase = async (db) => {
       )
     `);
     
-    // Create payment_transactions table if it doesn't exist
+    // Create base_payment_transactions table if it doesn't exist
     await dbMethods.run(db, `
-      CREATE TABLE IF NOT EXISTS payment_transactions (
+      CREATE TABLE IF NOT EXISTS base_payment_transactions (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         transaction_reference TEXT UNIQUE NOT NULL,
         amount REAL NOT NULL,
@@ -126,7 +126,7 @@ const initializeDatabase = async (db) => {
         transaction_metadata TEXT,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (qr_code_id) REFERENCES payment_qr_codes(id),
+        FOREIGN KEY (qr_code_id) REFERENCES base_payment_qr_codes(id),
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     `);
@@ -146,7 +146,7 @@ router.get('/status', async (req, res) => {
   try {
     const db = req.app.locals.db;
     const featureToggle = await dbMethods.get(db, 
-      'SELECT is_enabled FROM feature_toggles WHERE feature_name = ?', 
+      'SELECT is_enabled FROM base_feature_toggles WHERE feature_name = ?', 
       ['payment_integration']
     );
 
@@ -184,7 +184,7 @@ router.get('/qr-codes', [
         active, 
         created_at,
         updated_at
-       FROM payment_qr_codes
+       FROM base_payment_qr_codes
        ORDER BY created_at DESC`, 
       []
     );
@@ -231,7 +231,7 @@ router.get('/qr-codes/:id', [
         active, 
         created_at,
         updated_at
-       FROM payment_qr_codes
+       FROM base_payment_qr_codes
        WHERE id = ?`, 
       [qrCodeId]
     );
@@ -293,7 +293,7 @@ router.post('/qr-codes', [
     
     // Create new QR code
     const result = await dbMethods.run(db, 
-      `INSERT INTO payment_qr_codes (
+      `INSERT INTO base_payment_qr_codes (
         name, 
         description, 
         image_url, 
@@ -367,7 +367,7 @@ router.put('/qr-codes/:id', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if QR code exists
-    const existingQrCode = await dbMethods.get(db, 'SELECT id FROM payment_qr_codes WHERE id = ?', [qrCodeId]);
+    const existingQrCode = await dbMethods.get(db, 'SELECT id FROM base_payment_qr_codes WHERE id = ?', [qrCodeId]);
     if (!existingQrCode) {
       return res.status(404).json({ error: 'QR code not found' });
     }
@@ -403,7 +403,7 @@ router.put('/qr-codes/:id', [
     
     // Update QR code
     await dbMethods.run(db, 
-      `UPDATE payment_qr_codes SET ${updateFields.join(', ')} WHERE id = ?`, 
+      `UPDATE base_payment_qr_codes SET ${updateFields.join(', ')} WHERE id = ?`, 
       updateValues
     );
     
@@ -428,7 +428,7 @@ router.put('/qr-codes/:id', [
         created_by,
         created_at,
         updated_at
-       FROM payment_qr_codes
+       FROM base_payment_qr_codes
        WHERE id = ?`, 
       [qrCodeId]
     );
@@ -457,7 +457,7 @@ router.delete('/qr-codes/:id', [
     
     // Get QR code to check if it exists and to get the file path
     const qrCode = await dbMethods.get(db, 
-      'SELECT id, qr_code_path FROM payment_qr_codes WHERE id = ?', 
+      'SELECT id, qr_code_path FROM base_payment_qr_codes WHERE id = ?', 
       [qrCodeId]
     );
     
@@ -467,7 +467,7 @@ router.delete('/qr-codes/:id', [
     
     // Check if QR code is being used in any transactions
     const transactionsUsingQrCode = await dbMethods.get(db, 
-      'SELECT COUNT(*) as count FROM payment_transactions WHERE qr_code_id = ?', 
+      'SELECT COUNT(*) as count FROM base_payment_transactions WHERE qr_code_id = ?', 
       [qrCodeId]
     );
     
@@ -478,7 +478,7 @@ router.delete('/qr-codes/:id', [
     }
     
     // Delete QR code
-    await dbMethods.run(db, 'DELETE FROM payment_qr_codes WHERE id = ?', [qrCodeId]);
+    await dbMethods.run(db, 'DELETE FROM base_payment_qr_codes WHERE id = ?', [qrCodeId]);
     
     // Delete file from filesystem if it exists
     if (qrCode.qr_code_path && fs.existsSync(qrCode.qr_code_path)) {
@@ -517,7 +517,7 @@ router.patch('/qr-codes/:id/activate', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if QR code exists
-    const existingQrCode = await dbMethods.get(db, 'SELECT id FROM payment_qr_codes WHERE id = ?', [qrCodeId]);
+    const existingQrCode = await dbMethods.get(db, 'SELECT id FROM base_payment_qr_codes WHERE id = ?', [qrCodeId]);
     if (!existingQrCode) {
       return res.status(404).json({ error: 'QR code not found' });
     }
@@ -527,10 +527,10 @@ router.patch('/qr-codes/:id/activate', [
     
     try {
       // Deactivate all QR codes
-      await dbMethods.run(db, 'UPDATE payment_qr_codes SET is_active = 0');
+      await dbMethods.run(db, 'UPDATE base_payment_qr_codes SET is_active = 0');
       
       // Activate the selected QR code
-      await dbMethods.run(db, 'UPDATE payment_qr_codes SET is_active = 1 WHERE id = ?', [qrCodeId]);
+      await dbMethods.run(db, 'UPDATE base_payment_qr_codes SET is_active = 1 WHERE id = ?', [qrCodeId]);
       
       // Commit transaction
       await dbMethods.run(db, 'COMMIT');
@@ -578,7 +578,7 @@ router.patch('/qr-codes/:id/deactivate', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if QR code exists
-    const existingQrCode = await dbMethods.get(db, 'SELECT id, is_active FROM payment_qr_codes WHERE id = ?', [qrCodeId]);
+    const existingQrCode = await dbMethods.get(db, 'SELECT id, is_active FROM base_payment_qr_codes WHERE id = ?', [qrCodeId]);
     if (!existingQrCode) {
       return res.status(404).json({ error: 'QR code not found' });
     }
@@ -589,7 +589,7 @@ router.patch('/qr-codes/:id/deactivate', [
     }
     
     // Deactivate the QR code
-    await dbMethods.run(db, 'UPDATE payment_qr_codes SET is_active = 0 WHERE id = ?', [qrCodeId]);
+    await dbMethods.run(db, 'UPDATE base_payment_qr_codes SET is_active = 0 WHERE id = ?', [qrCodeId]);
     
     // Log activity
     eventBus.emit('log:activity', {
@@ -641,9 +641,9 @@ router.get('/transactions', [
         t.transaction_metadata,
         q.payment_name as qr_code_name,
         u.first_name || ' ' || u.last_name as user_name
-      FROM payment_transactions t
-      LEFT JOIN payment_qr_codes q ON t.qr_code_id = q.id
-      LEFT JOIN users_master u ON t.user_id = u.user_id
+      FROM base_payment_transactions t
+      LEFT JOIN base_payment_qr_codes q ON t.qr_code_id = q.id
+      LEFT JOIN base_users_master u ON t.user_id = u.user_id
     `;
     
     // Build WHERE clause based on filters
@@ -717,7 +717,7 @@ router.get('/qr-codes/:id/image', [
     
     // Get QR code image data
     const qrCode = await dbMethods.get(db, 
-      'SELECT qr_code_image, qr_code_path FROM payment_qr_codes WHERE id = ?', 
+      'SELECT qr_code_image, qr_code_path FROM base_payment_qr_codes WHERE id = ?', 
       [qrCodeId]
     );
     
@@ -774,9 +774,9 @@ router.get('/transactions/:id', [
         t.transaction_metadata,
         q.payment_name as qr_code_name,
         u.first_name || ' ' || u.last_name as user_name
-      FROM payment_transactions t
-      LEFT JOIN payment_qr_codes q ON t.qr_code_id = q.id
-      LEFT JOIN users_master u ON t.user_id = u.user_id
+      FROM base_payment_transactions t
+      LEFT JOIN base_payment_qr_codes q ON t.qr_code_id = q.id
+      LEFT JOIN base_users_master u ON t.user_id = u.user_id
       WHERE t.id = ?`, 
       [transactionId]
     );
@@ -836,7 +836,7 @@ router.post('/transactions', [
     
     // Verify QR code exists if provided
     if (qr_code_id) {
-      const qrCode = await dbMethods.get(db, 'SELECT id FROM payment_qr_codes WHERE id = ?', [qr_code_id]);
+      const qrCode = await dbMethods.get(db, 'SELECT id FROM base_payment_qr_codes WHERE id = ?', [qr_code_id]);
       if (!qrCode) {
         return res.status(404).json({ error: 'QR code not found' });
       }
@@ -844,7 +844,7 @@ router.post('/transactions', [
     
     // Check for duplicate transaction reference
     const existingTransaction = await dbMethods.get(db, 
-      'SELECT id FROM payment_transactions WHERE transaction_reference = ?', 
+      'SELECT id FROM base_payment_transactions WHERE transaction_reference = ?', 
       [transaction_reference]
     );
     
@@ -854,7 +854,7 @@ router.post('/transactions', [
     
     // Create new transaction
     const result = await dbMethods.run(db, 
-      `INSERT INTO payment_transactions (
+      `INSERT INTO base_payment_transactions (
         transaction_reference,
         amount,
         currency,

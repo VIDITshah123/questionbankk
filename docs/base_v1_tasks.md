@@ -70,12 +70,12 @@ This document outlines the detailed tasks for implementing the EmployDEX Base Pl
   - [x] 2.1.6 Create activity_logs table for audit tracking
   - [x] 2.1.7 Add foreign key constraints and indexes
 - [x] 2.2 Implement database schema from database structure document
-- [x] 2.3 Create users_master table with required fields
-- [x] 2.4 Create roles_master table with required fields
-- [x] 2.5 Create permissions_master table with required fields
-- [x] 2.6 Create user_roles_tx junction table with required fields
-- [x] 2.7 Create role_permissions_tx junction table with required fields
-- [x] 2.8 Create activity_logs_tx table for audit logging
+- [x] 2.3 Create base_users_master table with required fields
+- [x] 2.4 Create base_roles_master table with required fields
+- [x] 2.5 Create base_permissions_master table with required fields
+- [x] 2.6 Create base_user_roles_tx junction table with required fields
+- [x] 2.7 Create base_role_permissions_tx junction table with required fields
+- [x] 2.8 Create base_activity_logs_tx table for audit logging
 - [x] 2.9 Populate database with initial data (default admin user, roles, permissions)
 - [x] 2.10 Test database schema and relationships
 - [x] 2.11 Create database utility module for common operations

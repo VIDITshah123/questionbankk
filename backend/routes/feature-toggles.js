@@ -39,7 +39,7 @@ router.get('/', [
     const eventBus = req.app.locals.eventBus;
     
     const featureToggles = await dbMethods.all(db, 
-      'SELECT * FROM feature_toggles ORDER BY feature_name', 
+      'SELECT * FROM base_feature_toggles ORDER BY feature_name', 
       []
     );
     
@@ -88,7 +88,7 @@ router.get('/:name', [
     const db = req.app.locals.db;
     
     const featureToggle = await dbMethods.get(db, 
-      'SELECT * FROM feature_toggles WHERE feature_name = ?', 
+      'SELECT * FROM base_feature_toggles WHERE feature_name = ?', 
       [toggleName]
     );
     
@@ -142,7 +142,7 @@ router.patch('/update', [
     
     // Check if feature toggle exists
     const existingToggle = await dbMethods.get(db, 
-      'SELECT * FROM feature_toggles WHERE feature_name = ?', 
+      'SELECT * FROM base_feature_toggles WHERE feature_name = ?', 
       [name]
     );
     
@@ -155,7 +155,7 @@ router.patch('/update', [
     
     // Update feature toggle
     await dbMethods.run(db, 
-      'UPDATE feature_toggles SET is_enabled = ? WHERE feature_name = ?', 
+      'UPDATE base_feature_toggles SET is_enabled = ? WHERE feature_name = ?', 
       [isEnabledValue, name]
     );
     
@@ -170,7 +170,7 @@ router.patch('/update', [
     
     // Get updated feature toggle
     const updatedToggle = await dbMethods.get(db, 
-      'SELECT * FROM feature_toggles WHERE feature_name = ?', 
+      'SELECT * FROM base_feature_toggles WHERE feature_name = ?', 
       [name]
     );
     

@@ -84,7 +84,7 @@ router.get('/roles', authenticateToken, checkPermissions(['role_view']), async (
     
     // Query all roles
     const roles = await dbMethods.all(db, 
-      'SELECT role_id, name, description, created_at, updated_at FROM roles_master ORDER BY name',
+      'SELECT role_id, name, description, created_at, updated_at FROM base_roles_master ORDER BY name',
       []
     );
     
@@ -92,8 +92,8 @@ router.get('/roles', authenticateToken, checkPermissions(['role_view']), async (
     for (const role of roles) {
       const permissions = await dbMethods.all(db, 
         `SELECT p.permission_id, p.name, p.description 
-         FROM permissions_master p
-         JOIN role_permissions_tx rp ON p.permission_id = rp.permission_id
+         FROM base_permissions_master p
+         JOIN base_role_permissions_tx rp ON p.permission_id = rp.permission_id
          WHERE rp.role_id = ?
          ORDER BY p.name`,
         [role.role_id]
@@ -104,7 +104,7 @@ router.get('/roles', authenticateToken, checkPermissions(['role_view']), async (
       
       // Count users with this role
       const userCount = await dbMethods.get(db,
-        'SELECT COUNT(DISTINCT user_id) as count FROM user_roles_tx WHERE role_id = ?',
+        'SELECT COUNT(DISTINCT user_id) as count FROM base_user_roles_tx WHERE role_id = ?',
         [role.role_id]
       );
       
@@ -271,7 +271,7 @@ router.get('/roles/:id', authenticateToken, checkPermissions(['role_view']), asy
     
     // Get role data
     const role = await dbMethods.get(db, 
-      'SELECT role_id, name, description, created_at, updated_at FROM roles_master WHERE role_id = ?',
+      'SELECT role_id, name, description, created_at, updated_at FROM base_roles_master WHERE role_id = ?',
       [roleId]
     );
     
@@ -282,8 +282,8 @@ router.get('/roles/:id', authenticateToken, checkPermissions(['role_view']), asy
     // Get role permissions
     const permissions = await dbMethods.all(db, 
       `SELECT p.permission_id, p.name, p.description 
-       FROM permissions_master p
-       JOIN role_permissions_tx rp ON p.permission_id = rp.permission_id
+       FROM base_permissions_master p
+       JOIN base_role_permissions_tx rp ON p.permission_id = rp.permission_id
        WHERE rp.role_id = ?
        ORDER BY p.name`,
       [roleId]
@@ -292,8 +292,8 @@ router.get('/roles/:id', authenticateToken, checkPermissions(['role_view']), asy
     // Get users with this role
     const users = await dbMethods.all(db, 
       `SELECT u.user_id, u.first_name, u.last_name, u.email 
-       FROM users_master u
-       JOIN user_roles_tx ur ON u.user_id = ur.user_id
+       FROM base_users_master u
+       JOIN base_user_roles_tx ur ON u.user_id = ur.user_id
        WHERE ur.role_id = ?
        LIMIT 100`,
       [roleId]
@@ -345,7 +345,7 @@ router.post('/roles', [
     
     // Check if role with the same name already exists
     const existingRole = await dbMethods.get(db, 
-      'SELECT role_id FROM roles_master WHERE name = ?', 
+      'SELECT role_id FROM base_roles_master WHERE name = ?', 
       [name]
     );
     
@@ -355,7 +355,7 @@ router.post('/roles', [
     
     // Create new role
     const result = await dbMethods.run(db, 
-      'INSERT INTO roles_master (name, description) VALUES (?, ?)', 
+      'INSERT INTO base_roles_master (name, description) VALUES (?, ?)', 
       [name, description || '']
     );
     
@@ -365,7 +365,7 @@ router.post('/roles', [
     if (permissions && permissions.length > 0) {
       for (const permissionId of permissions) {
         await dbMethods.run(db, 
-          'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
+          'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
           [newRoleId, permissionId]
         );
       }
@@ -422,7 +422,7 @@ router.put('/roles/:id', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if role exists
-    const existingRole = await dbMethods.get(db, 'SELECT role_id FROM roles_master WHERE role_id = ?', [roleId]);
+    const existingRole = await dbMethods.get(db, 'SELECT role_id FROM base_roles_master WHERE role_id = ?', [roleId]);
     if (!existingRole) {
       return res.status(404).json({ error: 'Role not found' });
     }
@@ -436,7 +436,7 @@ router.put('/roles/:id', [
     } else if (name) {
       // For custom roles, check if name is unique
       const roleWithName = await dbMethods.get(db, 
-        'SELECT role_id FROM roles_master WHERE name = ? AND role_id != ?', 
+        'SELECT role_id FROM base_roles_master WHERE name = ? AND role_id != ?', 
         [name, roleId]
       );
       if (roleWithName) {
@@ -465,7 +465,7 @@ router.put('/roles/:id', [
     if (updateFields.length > 0) {
       updateValues.push(roleId);
       await dbMethods.run(db, 
-        `UPDATE roles_master SET ${updateFields.join(', ')} WHERE role_id = ?`, 
+        `UPDATE base_roles_master SET ${updateFields.join(', ')} WHERE role_id = ?`, 
         updateValues
       );
     }
@@ -474,7 +474,7 @@ router.put('/roles/:id', [
     if (permissions) {
       // For Admin role, ensure it keeps all permissions
       if (roleId == 1) {
-        const allPermissions = await dbMethods.all(db, 'SELECT permission_id FROM permissions_master');
+        const allPermissions = await dbMethods.all(db, 'SELECT permission_id FROM base_permissions_master');
         const allPermissionIds = allPermissions.map(p => p.permission_id);
         
         // Check if all permissions are included
@@ -486,12 +486,12 @@ router.put('/roles/:id', [
       }
       
       // Delete existing permissions first
-      await dbMethods.run(db, 'DELETE FROM role_permissions_tx WHERE role_id = ?', [roleId]);
+      await dbMethods.run(db, 'DELETE FROM base_role_permissions_tx WHERE role_id = ?', [roleId]);
       
       // Add new permissions
       for (const permissionId of permissions) {
         await dbMethods.run(db, 
-          'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
+          'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
           [roleId, permissionId]
         );
       }
@@ -533,7 +533,7 @@ router.delete('/roles/:id', authenticateToken, checkPermissions(['role_delete'])
     const eventBus = req.app.locals.eventBus;
     
     // Get role data
-    const role = await dbMethods.get(db, 'SELECT role_id, name FROM roles_master WHERE role_id = ?', [roleId]);
+    const role = await dbMethods.get(db, 'SELECT role_id, name FROM base_roles_master WHERE role_id = ?', [roleId]);
     
     if (!role) {
       return res.status(404).json({ error: 'Role not found' });
@@ -546,7 +546,7 @@ router.delete('/roles/:id', authenticateToken, checkPermissions(['role_delete'])
     
     // Check if role has users
     const userCount = await dbMethods.get(db, 
-      'SELECT COUNT(*) as count FROM user_roles_tx WHERE role_id = ?', 
+      'SELECT COUNT(*) as count FROM base_user_roles_tx WHERE role_id = ?', 
       [roleId]
     );
     
@@ -557,9 +557,9 @@ router.delete('/roles/:id', authenticateToken, checkPermissions(['role_delete'])
       });
     }
     
-    // Because of ON DELETE CASCADE constraints, deleting from roles_master 
-    // will automatically delete related records in role_permissions_tx
-    await dbMethods.run(db, 'DELETE FROM roles_master WHERE role_id = ?', [roleId]);
+    // Because of ON DELETE CASCADE constraints, deleting from base_roles_master 
+    // will automatically delete related records in base_role_permissions_tx
+    await dbMethods.run(db, 'DELETE FROM base_roles_master WHERE role_id = ?', [roleId]);
     
     // Log activity
     eventBus.emit('log:activity', {
@@ -608,7 +608,7 @@ async function processRoleRow(row, db, results, eventBus, createdBy) {
   
   // Check if role already exists
   const existingRole = await dbMethods.get(db, 
-    'SELECT role_id FROM roles_master WHERE name = ?', 
+    'SELECT role_id FROM base_roles_master WHERE name = ?', 
     [name]
   );
   
@@ -622,7 +622,7 @@ async function processRoleRow(row, db, results, eventBus, createdBy) {
   try {
     // Create the role
     const result = await dbMethods.run(db, 
-      'INSERT INTO roles_master (name, description) VALUES (?, ?)', 
+      'INSERT INTO base_roles_master (name, description) VALUES (?, ?)', 
       [name, description]
     );
     
@@ -635,14 +635,14 @@ async function processRoleRow(row, db, results, eventBus, createdBy) {
       // Get permission IDs from names
       for (const permName of permissionNames) {
         const permission = await dbMethods.get(db, 
-          'SELECT permission_id FROM permissions_master WHERE name = ?', 
+          'SELECT permission_id FROM base_permissions_master WHERE name = ?', 
           [permName]
         );
         
         if (permission) {
           // Assign permission to role
           await dbMethods.run(db, 
-            'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
+            'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
             [roleId, permission.permission_id]
           );
         }

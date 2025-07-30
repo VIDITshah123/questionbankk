@@ -29,7 +29,7 @@ async function testAdminLogin() {
 
   // Find admin by email (simulating login)
   db.get(
-    'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM users_master WHERE email = ?',
+    'SELECT user_id, email, password_hash, first_name, last_name, is_active FROM base_users_master WHERE email = ?',
     [adminUser.email],
     async (err, user) => {
       if (err) {
@@ -60,10 +60,10 @@ async function testAdminLogin() {
       // Get admin roles and permissions (exactly as in the authentication module)
       db.all(
         `SELECT r.name as role_name, p.name as permission_name
-         FROM user_roles_tx ur
-         JOIN roles_master r ON ur.role_id = r.role_id
-         LEFT JOIN role_permissions_tx rp ON r.role_id = rp.role_id
-         LEFT JOIN permissions_master p ON rp.permission_id = p.permission_id
+         FROM base_user_roles_tx ur
+         JOIN base_roles_master r ON ur.role_id = r.role_id
+         LEFT JOIN base_role_permissions_tx rp ON r.role_id = rp.role_id
+         LEFT JOIN base_permissions_master p ON rp.permission_id = p.permission_id
          WHERE ur.user_id = ?`,
         [user.user_id],
         (err, userRolesAndPermissions) => {
@@ -99,7 +99,7 @@ async function testAdminLogin() {
             console.log('\nFixing missing permissions for Admin role...');
             
             // Get Admin role ID
-            db.get('SELECT role_id FROM roles_master WHERE name = ?', ['Admin'], (err, role) => {
+            db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin'], (err, role) => {
               if (err || !role) {
                 console.error('Error getting Admin role:', err ? err.message : 'Role not found');
                 db.close();
@@ -108,7 +108,7 @@ async function testAdminLogin() {
               
               // Get all missing permission IDs
               db.all(
-                'SELECT permission_id FROM permissions_master WHERE name IN (' + 
+                'SELECT permission_id FROM base_permissions_master WHERE name IN (' + 
                 missingPermissions.map(() => '?').join(',') + ')',
                 missingPermissions,
                 (err, permissionsToAdd) => {
@@ -124,7 +124,7 @@ async function testAdminLogin() {
                   const insertPromises = permissionsToAdd.map(p => {
                     return new Promise((resolve, reject) => {
                       db.run(
-                        'INSERT OR IGNORE INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
+                        'INSERT OR IGNORE INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
                         [role.role_id, p.permission_id],
                         function(err) {
                           if (err) reject(err);
@@ -141,8 +141,8 @@ async function testAdminLogin() {
                       // Verify the fix
                       db.all(
                         `SELECT p.name
-                         FROM role_permissions_tx rp
-                         JOIN permissions_master p ON rp.permission_id = p.permission_id
+                         FROM base_role_permissions_tx rp
+                         JOIN base_permissions_master p ON rp.permission_id = p.permission_id
                          WHERE rp.role_id = ?`,
                         [role.role_id],
                         (err, updatedPermissions) => {

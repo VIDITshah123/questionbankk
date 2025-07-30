@@ -39,9 +39,9 @@ async function removeUserViewPermission() {
     // Show existing permissions for User role
     const checkPermissionsSql = `
       SELECT p.name, p.permission_id, r.role_id, r.name as role_name
-      FROM role_permissions_tx rp
-      JOIN permissions_master p ON rp.permission_id = p.permission_id
-      JOIN roles_master r ON rp.role_id = r.role_id
+      FROM base_role_permissions_tx rp
+      JOIN base_permissions_master p ON rp.permission_id = p.permission_id
+      JOIN base_roles_master r ON rp.role_id = r.role_id
       WHERE r.name = 'User'
     `;
     
@@ -62,9 +62,9 @@ async function removeUserViewPermission() {
       
       // Execute direct SQL to remove the user_view permission from User role
       const sql = `
-        DELETE FROM role_permissions_tx 
-        WHERE role_id = (SELECT role_id FROM roles_master WHERE name = 'User')
-        AND permission_id = (SELECT permission_id FROM permissions_master WHERE name = 'user_view')
+        DELETE FROM base_role_permissions_tx 
+        WHERE role_id = (SELECT role_id FROM base_roles_master WHERE name = 'User')
+        AND permission_id = (SELECT permission_id FROM base_permissions_master WHERE name = 'user_view')
       `;
       
       db.run(sql, function(err) {

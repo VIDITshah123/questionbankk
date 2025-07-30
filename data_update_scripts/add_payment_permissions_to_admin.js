@@ -25,7 +25,7 @@ db.configure('busyTimeout', 5000);
 // Main function to ensure payment permissions for Admin role
 function ensurePaymentPermissionsForAdmin() {
   // Get Admin role ID
-  db.get('SELECT role_id FROM roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
+  db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
     if (err) {
       console.error('Error finding Admin role:', err.message);
       closeAndExit(1);
@@ -52,7 +52,7 @@ function ensurePaymentPermissionsForAdmin() {
 // Helper function to ensure a permission exists and is assigned to the Admin role
 function ensurePermission(permissionName, permissionDescription, adminRoleId) {
   // Check if permission exists
-  db.get('SELECT permission_id FROM permissions_master WHERE name = ?', [permissionName], (err, permission) => {
+  db.get('SELECT permission_id FROM base_permissions_master WHERE name = ?', [permissionName], (err, permission) => {
     if (err) {
       console.error(`Error checking for ${permissionName} permission:`, err.message);
       return;
@@ -63,7 +63,7 @@ function ensurePermission(permissionName, permissionDescription, adminRoleId) {
       const permissionId = permission.permission_id;
       console.log(`Found ${permissionName} permission with ID: ${permissionId}`);
       
-      db.get('SELECT * FROM role_permissions_tx WHERE role_id = ? AND permission_id = ?', [adminRoleId, permissionId], (err, rolePermission) => {
+      db.get('SELECT * FROM base_role_permissions_tx WHERE role_id = ? AND permission_id = ?', [adminRoleId, permissionId], (err, rolePermission) => {
         if (err) {
           console.error(`Error checking if ${permissionName} is assigned to Admin:`, err.message);
           return;
@@ -73,7 +73,7 @@ function ensurePermission(permissionName, permissionDescription, adminRoleId) {
           console.log(`Admin role already has ${permissionName} permission`);
         } else {
           // Assign permission to Admin role
-          db.run('INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', [adminRoleId, permissionId], function(err) {
+          db.run('INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', [adminRoleId, permissionId], function(err) {
             if (err) {
               console.error(`Error assigning ${permissionName} to Admin role:`, err.message);
               return;
@@ -84,7 +84,7 @@ function ensurePermission(permissionName, permissionDescription, adminRoleId) {
       });
     } else {
       // Permission doesn't exist, create it and assign to Admin
-      db.run('INSERT INTO permissions_master (name, description) VALUES (?, ?)', [permissionName, permissionDescription], function(err) {
+      db.run('INSERT INTO base_permissions_master (name, description) VALUES (?, ?)', [permissionName, permissionDescription], function(err) {
         if (err) {
           console.error(`Error creating ${permissionName} permission:`, err.message);
           return;
@@ -94,7 +94,7 @@ function ensurePermission(permissionName, permissionDescription, adminRoleId) {
         console.log(`Created ${permissionName} permission with ID: ${permissionId}`);
         
         // Assign new permission to Admin role
-        db.run('INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', [adminRoleId, permissionId], function(err) {
+        db.run('INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', [adminRoleId, permissionId], function(err) {
           if (err) {
             console.error(`Error assigning ${permissionName} to Admin role:`, err.message);
             return;

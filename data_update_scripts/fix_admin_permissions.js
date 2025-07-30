@@ -25,7 +25,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 async function fixAdminPermissions() {
   try {
     // Get Admin role ID - try both 'Admin' and 'admin' cases
-    db.get('SELECT role_id FROM roles_master WHERE name = ? OR name = ?', ['Admin', 'admin'], (err, adminRole) => {
+    db.get('SELECT role_id FROM base_roles_master WHERE name = ? OR name = ?', ['Admin', 'admin'], (err, adminRole) => {
       if (err) {
         console.error('Error getting admin role:', err.message);
         return;
@@ -43,7 +43,7 @@ async function fixAdminPermissions() {
       const requiredPermissionPatterns = [
         '%feature_toggle%',         // All feature toggle permissions
         '%route_users_bulk_upload%', // Bulk upload user permissions
-        '%route_roles_feature_toggles%' // Feature toggle route permissions
+        '%route_roles_base_feature_toggles%' // Feature toggle route permissions
       ];
       
       // Assign each set of permissions
@@ -64,7 +64,7 @@ async function fixAdminPermissions() {
 // Function to assign all permissions matching a pattern to admin role
 function assignPermissionsMatching(adminRoleId, pattern) {
   // Get all permissions matching the pattern
-  db.all('SELECT permission_id, name FROM permissions_master WHERE name LIKE ?', 
+  db.all('SELECT permission_id, name FROM base_permissions_master WHERE name LIKE ?', 
     [pattern], 
     (err, permissions) => {
       if (err) {
@@ -85,7 +85,7 @@ function assignPermissionsMatching(adminRoleId, pattern) {
 // Function to assign ALL permissions to admin role as a failsafe
 function assignAllPermissionsToAdmin(adminRoleId) {
   // Get all permissions
-  db.all('SELECT permission_id, name FROM permissions_master', [], (err, allPermissions) => {
+  db.all('SELECT permission_id, name FROM base_permissions_master', [], (err, allPermissions) => {
     if (err) {
       console.error('Error getting all permissions:', err.message);
       return;
@@ -102,7 +102,7 @@ function assignAllPermissionsToAdmin(adminRoleId) {
 
 // Function to check if permission is assigned to role and assign if not
 function checkAndAssignPermission(roleId, permissionId, permissionName) {
-  db.get('SELECT * FROM role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
+  db.get('SELECT * FROM base_role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
     [roleId, permissionId], 
     (err, rolePermission) => {
       if (err) {
@@ -122,7 +122,7 @@ function checkAndAssignPermission(roleId, permissionId, permissionName) {
 
 // Function to assign permission to role
 function assignPermissionToRole(roleId, permissionId, permissionName) {
-  db.run('INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
+  db.run('INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
     [roleId, permissionId], 
     function(err) {
       if (err) {

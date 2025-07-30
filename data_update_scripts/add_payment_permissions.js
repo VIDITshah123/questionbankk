@@ -27,7 +27,7 @@ function ensurePermissionsExist() {
   console.log('Checking if payment permissions exist...');
   
   // Get Admin role ID
-  db.get('SELECT role_id FROM roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
+  db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
     if (err) {
       console.error('Error getting Admin role:', err.message);
       db.close();
@@ -46,7 +46,7 @@ function ensurePermissionsExist() {
     // For each permission
     paymentPermissions.forEach(permissionName => {
       // Check if permission exists
-      db.get('SELECT permission_id FROM permissions_master WHERE name = ?', [permissionName], (err, permission) => {
+      db.get('SELECT permission_id FROM base_permissions_master WHERE name = ?', [permissionName], (err, permission) => {
         if (err) {
           console.error(`Error checking ${permissionName}:`, err.message);
           return;
@@ -54,7 +54,7 @@ function ensurePermissionsExist() {
         
         if (!permission) {
           // Create permission if it doesn't exist
-          db.run('INSERT INTO permissions_master (name, description) VALUES (?, ?)', 
+          db.run('INSERT INTO base_permissions_master (name, description) VALUES (?, ?)', 
             [permissionName, `${permissionName} permission for payment module`], 
             function(err) {
               if (err) {
@@ -82,7 +82,7 @@ function ensurePermissionsExist() {
 
 // Function to check if permission is assigned to role and assign if not
 function checkAndAssignPermission(roleId, permissionId, permissionName) {
-  db.get('SELECT * FROM role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
+  db.get('SELECT * FROM base_role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
     [roleId, permissionId], 
     (err, rolePermission) => {
       if (err) {
@@ -102,7 +102,7 @@ function checkAndAssignPermission(roleId, permissionId, permissionName) {
 
 // Function to assign permission to role
 function assignPermissionToRole(roleId, permissionId, permissionName) {
-  db.run('INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
+  db.run('INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
     [roleId, permissionId], 
     function(err) {
       if (err) {
@@ -119,7 +119,7 @@ function assignPermissionToRole(roleId, permissionId, permissionName) {
 function enablePaymentFeatureToggle() {
   console.log('Checking payment feature toggle...');
   
-  db.get('SELECT * FROM feature_toggles WHERE feature_name = ?', ['payment_integration'], (err, toggle) => {
+  db.get('SELECT * FROM base_feature_toggles WHERE feature_name = ?', ['payment_integration'], (err, toggle) => {
     if (err) {
       console.error('Error checking feature toggle:', err.message);
       return;
@@ -127,7 +127,7 @@ function enablePaymentFeatureToggle() {
     
     if (!toggle) {
       // Create feature toggle
-      db.run('INSERT INTO feature_toggles (feature_name, description, is_enabled, feature) VALUES (?, ?, ?, ?)',
+      db.run('INSERT INTO base_feature_toggles (feature_name, description, is_enabled, feature) VALUES (?, ?, ?, ?)',
         ['payment_integration', 'Enable payment integration with QR code support', 1, 'payment'],
         function(err) {
           if (err) {
@@ -140,7 +140,7 @@ function enablePaymentFeatureToggle() {
       );
     } else if (!toggle.is_enabled) {
       // Enable feature toggle
-      db.run('UPDATE feature_toggles SET is_enabled = 1 WHERE feature_name = ?', ['payment_integration'], function(err) {
+      db.run('UPDATE base_feature_toggles SET is_enabled = 1 WHERE feature_name = ?', ['payment_integration'], function(err) {
         if (err) {
           console.error('Error enabling feature toggle:', err.message);
           return;
@@ -158,7 +158,7 @@ function enablePaymentFeatureToggle() {
 db.serialize(() => {
   // Create permissions table if it doesn't exist
   db.run(`
-    CREATE TABLE IF NOT EXISTS permissions_master (
+    CREATE TABLE IF NOT EXISTS base_permissions_master (
       permission_id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT UNIQUE NOT NULL,
       description TEXT,
@@ -172,7 +172,7 @@ db.serialize(() => {
 
   // Create role_permissions table if it doesn't exist
   db.run(`
-    CREATE TABLE IF NOT EXISTS role_permissions_tx (
+    CREATE TABLE IF NOT EXISTS base_role_permissions_tx (
       role_permission_id INTEGER PRIMARY KEY AUTOINCREMENT,
       role_id INTEGER NOT NULL,
       permission_id INTEGER NOT NULL,
@@ -184,9 +184,9 @@ db.serialize(() => {
     else console.log('Role permissions table ready');
   });
 
-  // Create feature_toggles table if it doesn't exist
+  // Create base_feature_toggles table if it doesn't exist
   db.run(`
-    CREATE TABLE IF NOT EXISTS feature_toggles (
+    CREATE TABLE IF NOT EXISTS base_feature_toggles (
       toggle_id INTEGER PRIMARY KEY AUTOINCREMENT,
       feature_name TEXT UNIQUE NOT NULL,
       description TEXT,
@@ -196,7 +196,7 @@ db.serialize(() => {
       updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `, (err) => {
-    if (err) console.error('Error creating feature_toggles table:', err.message);
+    if (err) console.error('Error creating base_feature_toggles table:', err.message);
     else console.log('Feature toggles table ready');
     
     // Run the main functions after tables are created

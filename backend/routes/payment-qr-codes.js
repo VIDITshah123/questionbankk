@@ -56,7 +56,7 @@ router.get('/', authenticateToken, checkPermission('payment_view'), (req, res) =
   try {
     const db = req.app.locals.db;
     const sql = `
-      SELECT * FROM payment_qr_codes
+      SELECT * FROM base_payment_qr_codes
       ORDER BY created_at DESC
     `;
     
@@ -95,7 +95,7 @@ router.get('/:id', authenticateToken, checkPermission('payment_view'), (req, res
     const db = req.app.locals.db;
     const { id } = req.params;
     
-    const sql = 'SELECT * FROM payment_qr_codes WHERE id = ?';
+    const sql = 'SELECT * FROM base_payment_qr_codes WHERE id = ?';
     
     db.get(sql, [id], (err, row) => {
       if (err) {
@@ -171,7 +171,7 @@ router.post('/', authenticateToken, checkPermission('payment_edit'), upload.sing
     
     // Insert into database
     const sql = `
-      INSERT INTO payment_qr_codes 
+      INSERT INTO base_payment_qr_codes 
       (name, description, payment_type, image_url, active, created_at, updated_at) 
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
@@ -222,7 +222,7 @@ router.post('/:id/activate', authenticateToken, checkPermission('payment_edit'),
       db.run('BEGIN TRANSACTION');
       
       // First deactivate all QR codes
-      db.run('UPDATE payment_qr_codes SET active = 0, updated_at = ?', [timestamp], (err) => {
+      db.run('UPDATE base_payment_qr_codes SET active = 0, updated_at = ?', [timestamp], (err) => {
         if (err) {
           console.error('Error deactivating QR codes:', err);
           db.run('ROLLBACK');
@@ -231,7 +231,7 @@ router.post('/:id/activate', authenticateToken, checkPermission('payment_edit'),
         
         // Then activate the specific QR code
         db.run(
-          'UPDATE payment_qr_codes SET active = 1, updated_at = ? WHERE id = ?', 
+          'UPDATE base_payment_qr_codes SET active = 1, updated_at = ? WHERE id = ?', 
           [timestamp, id], 
           function(err) {
             if (err) {
@@ -275,7 +275,7 @@ router.delete('/:id', authenticateToken, checkPermission('payment_edit'), (req, 
     const { id } = req.params;
     
     // Get the QR code details first to delete the image file
-    db.get('SELECT image_url FROM payment_qr_codes WHERE id = ?', [id], (err, row) => {
+    db.get('SELECT image_url FROM base_payment_qr_codes WHERE id = ?', [id], (err, row) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ error: 'Database error' });
@@ -286,7 +286,7 @@ router.delete('/:id', authenticateToken, checkPermission('payment_edit'), (req, 
       }
       
       // Delete the record from the database
-      db.run('DELETE FROM payment_qr_codes WHERE id = ?', [id], function(err) {
+      db.run('DELETE FROM base_payment_qr_codes WHERE id = ?', [id], function(err) {
         if (err) {
           console.error('Error deleting QR code:', err);
           return res.status(500).json({ error: 'Could not delete QR code' });

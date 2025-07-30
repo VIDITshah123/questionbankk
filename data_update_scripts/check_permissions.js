@@ -12,7 +12,7 @@ const db = new sqlite3.Database('./db/employdex-base.db', (err) => {
 // Check permissions for Admin role
 async function checkPermissions() {
   // Get Admin role ID
-  db.get('SELECT role_id FROM roles_master WHERE name = ?', ['Admin'], (err, role) => {
+  db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin'], (err, role) => {
     if (err || !role) {
       console.error('Error retrieving Admin role:', err ? err.message : 'Role not found');
       db.close();
@@ -23,7 +23,7 @@ async function checkPermissions() {
     console.log(`Found Admin role with ID: ${adminRoleId}`);
     
     // Get all available permissions
-    db.all('SELECT * FROM permissions_master', [], (err, allPermissions) => {
+    db.all('SELECT * FROM base_permissions_master', [], (err, allPermissions) => {
       if (err) {
         console.error('Error retrieving permissions:', err.message);
         db.close();
@@ -38,8 +38,8 @@ async function checkPermissions() {
       // Get permissions assigned to Admin role
       db.all(
         `SELECT rp.role_permission_id, p.permission_id, p.name, p.description
-         FROM role_permissions_tx rp
-         JOIN permissions_master p ON rp.permission_id = p.permission_id
+         FROM base_role_permissions_tx rp
+         JOIN base_permissions_master p ON rp.permission_id = p.permission_id
          WHERE rp.role_id = ?`,
         [adminRoleId],
         (err, adminPermissions) => {

@@ -3,7 +3,7 @@
  * 
  * Usage:
  * 1. Make sure the backend server is running
- * 2. Execute: node scripts/add_route_feature_toggles_api.js
+ * 2. Execute: node scripts/add_route_base_feature_toggles_api.js
  * 
  * This script will:
  * 1. Authenticate to get an access token
@@ -38,7 +38,7 @@ const applicationRoutes = [
   { name: 'roles_create', display_name: 'Create Role', description: 'Create new roles', enabled: true },
   { name: 'roles_edit', display_name: 'Edit Role', description: 'Edit existing roles', enabled: true },
   { name: 'roles_bulk_upload', display_name: 'Bulk Role Upload', description: 'Upload roles in bulk', enabled: true },
-  { name: 'roles_feature_toggles', display_name: 'Feature Toggle Management', description: 'Manage feature toggles', enabled: true },
+  { name: 'roles_base_feature_toggles', display_name: 'Feature Toggle Management', description: 'Manage feature toggles', enabled: true },
   
   // Permission management routes
   { name: 'permissions_list', display_name: 'Permission List', description: 'View and manage permissions', enabled: true },

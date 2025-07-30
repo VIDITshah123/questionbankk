@@ -5,7 +5,7 @@
 PRAGMA foreign_keys = ON;
 
 -- Create users table (master data)
-CREATE TABLE IF NOT EXISTS users_master (
+CREATE TABLE IF NOT EXISTS base_base_users_master (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     mobile_number TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users_master (
 );
 
 -- Create roles table (master data)
-CREATE TABLE IF NOT EXISTS roles_master (
+CREATE TABLE IF NOT EXISTS base_roles_master (
     role_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     description TEXT,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS roles_master (
 );
 
 -- Create permissions table (master data)
-CREATE TABLE IF NOT EXISTS permissions_master (
+CREATE TABLE IF NOT EXISTS base_base_permissions_master (
     permission_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     description TEXT,
@@ -36,29 +36,29 @@ CREATE TABLE IF NOT EXISTS permissions_master (
 );
 
 -- Create user_roles junction table (transaction data)
-CREATE TABLE IF NOT EXISTS user_roles_tx (
+CREATE TABLE IF NOT EXISTS base_user_roles_tx (
     user_role_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     role_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES users_master(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles_master(role_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES base_base_users_master(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES base_roles_master(role_id) ON DELETE CASCADE
 );
 
 -- Create role_permissions junction table (transaction data)
-CREATE TABLE IF NOT EXISTS role_permissions_tx (
+CREATE TABLE IF NOT EXISTS base_base_role_permissions_tx (
     role_permission_id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_id INTEGER NOT NULL,
     permission_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(role_id, permission_id),
-    FOREIGN KEY (role_id) REFERENCES roles_master(role_id) ON DELETE CASCADE,
-    FOREIGN KEY (permission_id) REFERENCES permissions_master(permission_id) ON DELETE CASCADE
+    FOREIGN KEY (role_id) REFERENCES base_roles_master(role_id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES base_base_permissions_master(permission_id) ON DELETE CASCADE
 );
 
 -- Create activity_logs table (transaction data)
-CREATE TABLE IF NOT EXISTS activity_logs_tx (
+CREATE TABLE IF NOT EXISTS base_base_activity_logs_tx (
     activity_log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
     action TEXT NOT NULL,
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS activity_logs_tx (
     ip_address TEXT,
     user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users_master(user_id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES base_base_users_master(user_id) ON DELETE SET NULL
 );
 
 -- Payment Integration Module Database Design
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS activity_logs_tx (
 
 -- Payment QR Codes Table
 -- -- Stores information about uploaded QR codes for payment processing
--- CREATE TABLE IF NOT EXISTS payment_qr_codes (
+-- CREATE TABLE IF NOT EXISTS base_base_payment_qr_codes (
 --     id INTEGER PRIMARY KEY AUTOINCREMENT,
 --     payment_name VARCHAR(100) NOT NULL,
 --     payment_description TEXT,
@@ -85,11 +85,11 @@ CREATE TABLE IF NOT EXISTS activity_logs_tx (
 --     created_by INTEGER NOT NULL,
 --     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 --     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
---     FOREIGN KEY (created_by) REFERENCES users_master(user_id)
+--     FOREIGN KEY (created_by) REFERENCES base_users_master(user_id)
 -- );
 
 -- Create updated QR codes table
-CREATE TABLE IF NOT EXISTS payment_qr_codes (
+CREATE TABLE IF NOT EXISTS base_base_payment_qr_codes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(100) NOT NULL,
     description TEXT,
@@ -101,10 +101,10 @@ CREATE TABLE IF NOT EXISTS payment_qr_codes (
 );
 
 -- Create index on payment type for faster lookups
-CREATE INDEX IF NOT EXISTS idx_payment_type ON payment_qr_codes(payment_type);
+CREATE INDEX IF NOT EXISTS idx_payment_type ON base_base_payment_qr_codes(payment_type);
 
 
-CREATE TABLE payment_transactions (
+CREATE TABLE base_base_payment_transactions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     qr_code_id INTEGER,
     transaction_ref VARCHAR(100) NOT NULL UNIQUE, -- Unique reference number for the transaction
@@ -112,13 +112,13 @@ CREATE TABLE payment_transactions (
     verified BOOLEAN DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT NULL,
-    FOREIGN KEY (qr_code_id) REFERENCES payment_qr_codes(id),
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    FOREIGN KEY (qr_code_id) REFERENCES base_base_payment_qr_codes(id),
+    FOREIGN KEY (user_id) REFERENCES base_base_users_master(user_id)
 )
 
 -- -- Payment Transactions Table
 -- -- Records all payment transactions processed through the system
--- CREATE TABLE IF NOT EXISTS payment_transactions (
+-- CREATE TABLE IF NOT EXISTS base_payment_transactions (
 --     id INTEGER PRIMARY KEY AUTOINCREMENT,
 --     qr_code_id integer not null, 
 --     transaction_reference VARCHAR(100) NOT NULL UNIQUE, -- Unique reference number for the transaction
@@ -130,22 +130,22 @@ CREATE TABLE payment_transactions (
 --     transaction_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 --     transaction_notes TEXT,
 --     transaction_metadata TEXT, -- JSON field for additional data
---     FOREIGN KEY (qr_code_id) REFERENCES payment_qr_codes(id),
---     FOREIGN KEY (user_id) REFERENCES users_master(user_id)
+--     FOREIGN KEY (qr_code_id) REFERENCES base_payment_qr_codes(id),
+--     FOREIGN KEY (user_id) REFERENCES base_users_master(user_id)
 -- );
 
 -- Create index on transaction reference for faster lookups
-CREATE INDEX IF NOT EXISTS idx_transaction_reference ON payment_transactions(transaction_reference);
+CREATE INDEX IF NOT EXISTS idx_transaction_reference ON base_base_payment_transactions(transaction_reference);
 
 -- Create index on transaction date for reporting
-CREATE INDEX IF NOT EXISTS idx_transaction_date ON payment_transactions(transaction_date);
+CREATE INDEX IF NOT EXISTS idx_transaction_date ON base_base_payment_transactions(transaction_date);
 
 -- Create index on payment_status for filtering
-CREATE INDEX IF NOT EXISTS idx_transaction_status ON payment_transactions(payment_status);
+CREATE INDEX IF NOT EXISTS idx_transaction_status ON base_base_payment_transactions(payment_status);
 
 
--- Migration: Add feature_toggles table
-CREATE TABLE IF NOT EXISTS feature_toggles (
+-- Migration: Add base_feature_toggles table
+CREATE TABLE IF NOT EXISTS base_base_feature_toggles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     feature_name TEXT UNIQUE NOT NULL,
     is_enabled INTEGER NOT NULL DEFAULT 0,
@@ -158,12 +158,12 @@ CREATE TABLE IF NOT EXISTS feature_toggles (
 
 
 -- Insert default roles
-INSERT INTO roles_master (name, description) VALUES 
+INSERT OR IGNORE INTO base_roles_master (name, description) VALUES 
     ('Admin', 'Administrator with full system access'),
     ('User', 'Standard user with limited access');
 
 -- Insert default permissions
-INSERT INTO permissions_master (name, description) VALUES
+INSERT OR IGNORE INTO base_base_permissions_master (name, description) VALUES
     ('user_view', 'Can view user details'),
     ('user_create', 'Can create users'),
     ('user_edit', 'Can edit user details'),
@@ -177,52 +177,67 @@ INSERT INTO permissions_master (name, description) VALUES
     ('permission_edit', 'Can view permissions'),
     ('permission_delete', 'Can view permissions'),
    ('feature_toggle_view', 'View feature toggles'),
-   ('feature_toggle_manage', 'Create, edit, or delete feature toggles')
-    ('permission_assign', 'Can assign permissions to roles');
+   ('feature_toggle_manage', 'Create, edit, or delete feature toggles'),
+   ('permission_assign', 'Can assign permissions to roles');
 
 -- Assign all permissions to Admin role
-INSERT INTO role_permissions_tx (role_id, permission_id)
+INSERT OR IGNORE INTO base_base_role_permissions_tx (role_id, permission_id)
 SELECT 
-    (SELECT role_id FROM roles_master WHERE name = 'Admin'), 
+    (SELECT role_id FROM base_roles_master WHERE name = 'Admin'), 
     permission_id 
-FROM permissions_master;
+FROM base_base_permissions_master;
 
 -- Assign basic permissions to User role
-INSERT INTO role_permissions_tx (role_id, permission_id)
+INSERT OR IGNORE INTO base_base_role_permissions_tx (role_id, permission_id)
 SELECT 
-    (SELECT role_id FROM roles_master WHERE name = 'User'), 
+    (SELECT role_id FROM base_roles_master WHERE name = 'User'), 
     permission_id 
-FROM permissions_master 
-WHERE name IN ('user_view');
+FROM base_base_permissions_master 
+WHERE name LIKE '%_view';
 
 -- Insert default admin user with password Admin@123 (admin/admin as per requirements)
-INSERT INTO users_master (mobile_number, email, password_hash, first_name, last_name) 
-VALUES ('9999999999', 'admin@employdex.com', '$2a$10$HCJ5Yd0YR1P4TGPJOyyAWe6jVXnjYQLTP8EuoNRPnT4l4XzUKCNbS', 'Admin', 'User');
+INSERT OR IGNORE INTO base_base_users_master (mobile_number, password_hash, email, first_name, last_name) VALUES ('9999999999', '$2a$10$HCJ5Yd0YR1P4TGPJOyyAWe6jVXnjYQLTP8EuoNRPnT4l4XzUKCNbS', 'admin@employdex.com', 'Admin', 'User'),
+('8888888888', '$2a$10$HCJ5Yd0YR1P4TGPJOyyAWe6jVXnjYQLTP8EuoNRPnT4l4XzUKCNbS', 'user@employdex.com', 'User1', 'User1');
+
 -- Note: password_hash is for 'admin' using bcrypt
 
 -- Assign Admin role to the admin user
-INSERT INTO user_roles_tx (user_id, role_id)
+INSERT OR IGNORE INTO base_user_roles_tx (user_id, role_id)
 VALUES (
-    (SELECT user_id FROM users_master WHERE email = 'admin@employdex.com'),
-    (SELECT role_id FROM roles_master WHERE name = 'Admin')
+    (SELECT user_id FROM base_base_users_master WHERE email = 'admin@employdex.com'),
+    (SELECT role_id FROM base_roles_master WHERE name = 'Admin')
+),
+(
+    (SELECT user_id FROM base_base_users_master WHERE email = 'user@employdex.com'),
+    (SELECT role_id FROM base_roles_master WHERE name = 'User')
 );
 
 
--- Add payment feature to feature_toggles table
+-- Add payment feature to base_feature_toggles table
 -- This allows the payment integration to be toggled on/off
-INSERT OR IGNORE INTO feature_toggles (feature_name, description, is_enabled, feature)
+INSERT OR IGNORE INTO base_base_feature_toggles (feature_name, description, is_enabled, feature)
 VALUES ('payment_integration', 'Enable payment integration with QR code support', 0, 'payment');
+-- Insert all permissions as feature toggles
+INSERT INTO base_base_feature_toggles (feature_name, description, is_enabled, feature)
+SELECT name, description, 0, 'permission'
+FROM base_base_permissions_master
+ON CONFLICT (feature_name) DO NOTHING;
 
--- Sample data for payment_qr_codes
-INSERT OR IGNORE INTO payment_qr_codes (payment_name, payment_description, qr_code_image, qr_code_path, payment_type, is_active, created_by)
-VALUES 
-('Default UPI QR', 'Default UPI payment QR code', X'00112233', '/uploads/qr/default_upi.png', 'UPI', 1, 1),
-('Corporate Account QR', 'Corporate bank account QR code', X'44556677', '/uploads/qr/corporate.png', 'BANK', 0, 1);
+-- Insert all roles as feature toggles
+INSERT INTO base_base_feature_toggles (feature_name, description, is_enabled, feature)
+SELECT name, description, 0, 'role'
+FROM base_roles_master
+ON CONFLICT (feature_name) DO NOTHING;
 
--- Sample data for payment_transactions
-INSERT OR IGNORE INTO payment_transactions (transaction_reference, amount, currency, payment_status, qr_code_id, user_id, transaction_notes)
-VALUES 
-('TXN123456789', 1000.00, 'INR', 'COMPLETED', 1, 2, 'Test transaction'),
-('TXN987654321', 1500.50, 'INR', 'PENDING', 1, 3, 'Awaiting confirmation'),
-('TXN567890123', 750.25, 'INR', 'FAILED', 2, 4, 'Payment gateway error');
+-- Sample data for base_payment_qr_codes
+INSERT OR IGNORE INTO base_base_payment_qr_codes (name, description, payment_type, image_url, active) VALUES 
+('Default UPI QR', 'Default UPI payment QR code', 'UPI', '/uploads/qr/default_upi.png', 1),
+('Corporate Account QR', 'Corporate bank account QR code', 'BANK', '/uploads/qr/corporate.png', 0);
+
+-- Sample data for base_payment_transactions
+INSERT OR IGNORE INTO base_base_payment_transactions (qr_code_id, transaction_ref, user_id, verified) VALUES 
+(1, 'TXN123456789', 2, 1),
+(1, 'TXN987654321', 3, 0),
+(2, 'TXN567890123', 4, 0);
+
 

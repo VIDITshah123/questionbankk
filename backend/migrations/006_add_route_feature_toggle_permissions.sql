@@ -2,7 +2,7 @@
 -- This migration adds all route-related permissions and feature toggles
 
 -- First, add all route feature toggles to the database
-INSERT OR IGNORE INTO feature_toggles (feature_name, description, enabled, created_at, updated_at)
+INSERT OR IGNORE INTO base_base_feature_toggles (feature_name, description, is_enabled, created_at, updated_at)
 VALUES
   -- Core routes
   ('route_dashboard', 'Feature toggle for Dashboard route', 1, datetime('now'), datetime('now')),
@@ -20,7 +20,7 @@ VALUES
   ('route_roles_create', 'Feature toggle for Create Role route', 1, datetime('now'), datetime('now')),
   ('route_roles_edit', 'Feature toggle for Edit Role route', 1, datetime('now'), datetime('now')),
   ('route_roles_bulk_upload', 'Feature toggle for Bulk Role Upload route', 1, datetime('now'), datetime('now')),
-  ('route_roles_feature_toggles', 'Feature toggle for Feature Toggle Management route', 1, datetime('now'), datetime('now')),
+  ('route_roles_base_feature_toggles', 'Feature toggle for Feature Toggle Management route', 1, datetime('now'), datetime('now')),
   
   -- Permission management routes
   ('route_permissions_list', 'Feature toggle for Permission List route', 1, datetime('now'), datetime('now')),
@@ -35,7 +35,7 @@ VALUES
 
 -- Now add permissions for each route and permission type (view, edit, create, delete)
 -- Dashboard permissions
-INSERT OR IGNORE INTO permissions (name, description, created_at, updated_at)
+INSERT OR IGNORE INTO base_base_permissions_master (name, description, created_at, updated_at)
 VALUES
   ('route_dashboard_view', 'View access for Dashboard', datetime('now'), datetime('now')),
   ('route_dashboard_edit', 'Edit access for Dashboard', datetime('now'), datetime('now')),
@@ -43,7 +43,7 @@ VALUES
   ('route_dashboard_delete', 'Delete access for Dashboard', datetime('now'), datetime('now'));
 
 -- User management permissions
-INSERT OR IGNORE INTO permissions (name, description, created_at, updated_at)
+INSERT OR IGNORE INTO base_base_permissions_master (name, description, created_at, updated_at)
 VALUES
   ('route_users_list_view', 'View access for User List', datetime('now'), datetime('now')),
   ('route_users_list_edit', 'Edit access for User List', datetime('now'), datetime('now')),
@@ -71,7 +71,7 @@ VALUES
   ('route_users_bulk_upload_delete', 'Delete access for Bulk User Upload', datetime('now'), datetime('now'));
 
 -- Role management permissions
-INSERT OR IGNORE INTO permissions (name, description, created_at, updated_at)
+INSERT OR IGNORE INTO base_base_permissions_master (name, description, created_at, updated_at)
 VALUES
   ('route_roles_list_view', 'View access for Role List', datetime('now'), datetime('now')),
   ('route_roles_list_edit', 'Edit access for Role List', datetime('now'), datetime('now')),
@@ -98,13 +98,13 @@ VALUES
   ('route_roles_bulk_upload_create', 'Create access for Bulk Role Upload', datetime('now'), datetime('now')),
   ('route_roles_bulk_upload_delete', 'Delete access for Bulk Role Upload', datetime('now'), datetime('now')),
   
-  ('route_roles_feature_toggles_view', 'View access for Feature Toggle Management', datetime('now'), datetime('now')),
-  ('route_roles_feature_toggles_edit', 'Edit access for Feature Toggle Management', datetime('now'), datetime('now')),
-  ('route_roles_feature_toggles_create', 'Create access for Feature Toggle Management', datetime('now'), datetime('now')),
-  ('route_roles_feature_toggles_delete', 'Delete access for Feature Toggle Management', datetime('now'), datetime('now'));
+  ('route_roles_base_feature_toggles_view', 'View access for Feature Toggle Management', datetime('now'), datetime('now')),
+  ('route_roles_base_feature_toggles_edit', 'Edit access for Feature Toggle Management', datetime('now'), datetime('now')),
+  ('route_roles_base_feature_toggles_create', 'Create access for Feature Toggle Management', datetime('now'), datetime('now')),
+  ('route_roles_base_feature_toggles_delete', 'Delete access for Feature Toggle Management', datetime('now'), datetime('now'));
 
 -- Permission management permissions
-INSERT OR IGNORE INTO permissions (name, description, created_at, updated_at)
+INSERT OR IGNORE INTO base_base_permissions_master (name, description, created_at, updated_at)
 VALUES
   ('route_permissions_list_view', 'View access for Permission List', datetime('now'), datetime('now')),
   ('route_permissions_list_edit', 'Edit access for Permission List', datetime('now'), datetime('now')),
@@ -127,7 +127,7 @@ VALUES
   ('route_permissions_edit_delete', 'Delete access for Edit Permission', datetime('now'), datetime('now'));
 
 -- System route permissions
-INSERT OR IGNORE INTO permissions (name, description, created_at, updated_at)
+INSERT OR IGNORE INTO base_base_permissions_master (name, description, created_at, updated_at)
 VALUES
   ('route_activity_logs_view', 'View access for Activity Logs', datetime('now'), datetime('now')),
   ('route_activity_logs_edit', 'Edit access for Activity Logs', datetime('now'), datetime('now')),

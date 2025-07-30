@@ -21,7 +21,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
 function ensureFeatureToggleEditPermission() {
   try {
     // Get Admin role ID
-    db.get('SELECT role_id FROM roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
+    db.get('SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin'], (err, adminRole) => {
       if (err) {
         console.error('Error getting Admin role:', err.message);
         return;
@@ -36,7 +36,7 @@ function ensureFeatureToggleEditPermission() {
       console.log(`Found Admin role with ID: ${adminRoleId}`);
       
       // Check if feature_toggle_edit permission exists
-      db.get('SELECT permission_id FROM permissions_master WHERE name = ?', 
+      db.get('SELECT permission_id FROM base_permissions_master WHERE name = ?', 
         ['feature_toggle_edit'], 
         (err, permission) => {
           if (err) {
@@ -45,7 +45,7 @@ function ensureFeatureToggleEditPermission() {
           }
           
           if (!permission) {
-            console.error('feature_toggle_edit permission not found in permissions_master');
+            console.error('feature_toggle_edit permission not found in base_permissions_master');
             return;
           }
           
@@ -63,7 +63,7 @@ function ensureFeatureToggleEditPermission() {
 
 // Function to check if permission is assigned to role and assign if not
 function checkAndAssignPermission(roleId, permissionId, permissionName) {
-  db.get('SELECT * FROM role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
+  db.get('SELECT * FROM base_role_permissions_tx WHERE role_id = ? AND permission_id = ?', 
     [roleId, permissionId], 
     (err, rolePermission) => {
       if (err) {
@@ -83,7 +83,7 @@ function checkAndAssignPermission(roleId, permissionId, permissionName) {
 
 // Function to assign permission to role
 function assignPermissionToRole(roleId, permissionId, permissionName) {
-  db.run('INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
+  db.run('INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
     [roleId, permissionId], 
     function(err) {
       if (err) {

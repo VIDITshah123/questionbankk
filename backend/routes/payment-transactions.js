@@ -22,7 +22,7 @@ router.post('/', authenticateToken, (req, res) => {
     const timestamp = new Date().toISOString();
     
     // Check if QR code exists
-    db.get('SELECT * FROM payment_qr_codes WHERE id = ?', [qrCodeId], (err, qrCode) => {
+    db.get('SELECT * FROM base_payment_qr_codes WHERE id = ?', [qrCodeId], (err, qrCode) => {
       if (err) {
         console.error('Database error:', err);
         return res.status(500).json({ error: 'Database error' });
@@ -45,7 +45,7 @@ router.post('/', authenticateToken, (req, res) => {
         
         // Create transaction in database
         const sql = `
-          INSERT INTO payment_transactions 
+          INSERT INTO base_payment_transactions 
           (qr_code_id, transaction_ref, user_id, verified, created_at) 
           VALUES (?, ?, ?, 0, ?)
         `;
@@ -88,7 +88,7 @@ router.get('/', authenticateToken, checkPermission('payment_view'), (req, res) =
     // Base query for count
     let countSql = `
       SELECT COUNT(*) as total 
-      FROM payment_transactions
+      FROM base_payment_transactions
     `;
     
     // Base query for data
@@ -107,9 +107,9 @@ router.get('/', authenticateToken, checkPermission('payment_view'), (req, res) =
         qr.name AS qr_name,
         qr.description AS qr_description,
         qr.amount AS qr_amount
-      FROM payment_transactions pt
+      FROM base_payment_transactions pt
       LEFT JOIN users u ON pt.user_id = u.id
-      LEFT JOIN payment_qr_codes qr ON pt.qr_code_id = qr.id
+      LEFT JOIN base_payment_qr_codes qr ON pt.qr_code_id = qr.id
     `;
     
     // Add search condition if provided
@@ -221,9 +221,9 @@ router.get('/:id', authenticateToken, checkPermission('payment_view'), (req, res
         qr.name AS qr_name,
         qr.description AS qr_description,
         qr.amount AS qr_amount
-      FROM payment_transactions pt
+      FROM base_payment_transactions pt
       LEFT JOIN users u ON pt.user_id = u.id
-      LEFT JOIN payment_qr_codes qr ON pt.qr_code_id = qr.id
+      LEFT JOIN base_payment_qr_codes qr ON pt.qr_code_id = qr.id
       WHERE pt.id = ?
     `;
     
@@ -275,7 +275,7 @@ router.get('/:id', authenticateToken, checkPermission('payment_view'), (req, res
 router.get('/qr-codes/active', authenticateToken, (req, res) => {
   try {
     const sql = `
-      SELECT * FROM payment_qr_codes
+      SELECT * FROM base_payment_qr_codes
       WHERE active = 1
       ORDER BY updated_at DESC
       LIMIT 1
@@ -322,7 +322,7 @@ router.put('/:id/verify', authenticateToken, checkPermission('payment_edit'), (r
     
     // Update the transaction verification status
     const sql = `
-      UPDATE payment_transactions
+      UPDATE base_payment_transactions
       SET verified = 1, updated_at = ?
       WHERE id = ?
     `;

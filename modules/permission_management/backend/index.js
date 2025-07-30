@@ -37,14 +37,14 @@ router.get('/permissions', authenticateToken, checkPermissions(['permission_view
     
     // Query all permissions
     const permissions = await dbMethods.all(db, 
-      'SELECT permission_id, name, description, created_at, updated_at FROM permissions_master ORDER BY name',
+      'SELECT permission_id, name, description, created_at, updated_at FROM base_permissions_master ORDER BY name',
       []
     );
     
     // For each permission, count roles that have it
     for (const permission of permissions) {
       const roleCount = await dbMethods.get(db,
-        'SELECT COUNT(DISTINCT role_id) as count FROM role_permissions_tx WHERE permission_id = ?',
+        'SELECT COUNT(DISTINCT role_id) as count FROM base_role_permissions_tx WHERE permission_id = ?',
         [permission.permission_id]
       );
       
@@ -83,7 +83,7 @@ router.get('/permissions/:id', authenticateToken, checkPermissions(['permission_
     
     // Get permission data
     const permission = await dbMethods.get(db, 
-      'SELECT permission_id, name, description, created_at, updated_at FROM permissions_master WHERE permission_id = ?',
+      'SELECT permission_id, name, description, created_at, updated_at FROM base_permissions_master WHERE permission_id = ?',
       [permissionId]
     );
     
@@ -94,8 +94,8 @@ router.get('/permissions/:id', authenticateToken, checkPermissions(['permission_
     // Get roles that have this permission
     const roles = await dbMethods.all(db, 
       `SELECT r.role_id, r.name, r.description
-       FROM roles_master r
-       JOIN role_permissions_tx rp ON r.role_id = rp.role_id
+       FROM base_roles_master r
+       JOIN base_role_permissions_tx rp ON r.role_id = rp.role_id
        WHERE rp.permission_id = ?
        ORDER BY r.name`,
       [permissionId]
@@ -146,7 +146,7 @@ router.post('/permissions', [
     
     // Check if permission with the same name already exists
     const existingPermission = await dbMethods.get(db, 
-      'SELECT permission_id FROM permissions_master WHERE name = ?', 
+      'SELECT permission_id FROM base_permissions_master WHERE name = ?', 
       [name]
     );
     
@@ -156,17 +156,17 @@ router.post('/permissions', [
     
     // Create new permission
     const result = await dbMethods.run(db, 
-      'INSERT INTO permissions_master (name, description) VALUES (?, ?)', 
+      'INSERT INTO base_permissions_master (name, description) VALUES (?, ?)', 
       [name, description]
     );
     
     const newPermissionId = result.lastID;
     
     // Automatically assign to Admin role
-    const adminRole = await dbMethods.get(db, 'SELECT role_id FROM roles_master WHERE name = ?', ['Admin']);
+    const adminRole = await dbMethods.get(db, 'SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin']);
     if (adminRole) {
       await dbMethods.run(db, 
-        'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
+        'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
         [adminRole.role_id, newPermissionId]
       );
     }
@@ -221,7 +221,7 @@ router.put('/permissions/:id', [
     
     // Check if permission exists
     const existingPermission = await dbMethods.get(db, 
-      'SELECT permission_id, name FROM permissions_master WHERE permission_id = ?', 
+      'SELECT permission_id, name FROM base_permissions_master WHERE permission_id = ?', 
       [permissionId]
     );
     
@@ -231,7 +231,7 @@ router.put('/permissions/:id', [
     
     // Update permission (only description can be updated, name is immutable)
     await dbMethods.run(db, 
-      'UPDATE permissions_master SET description = ?, updated_at = CURRENT_TIMESTAMP WHERE permission_id = ?', 
+      'UPDATE base_permissions_master SET description = ?, updated_at = CURRENT_TIMESTAMP WHERE permission_id = ?', 
       [description, permissionId]
     );
     
@@ -272,7 +272,7 @@ router.get('/missing-routes', authenticateToken, checkPermissions(['permission_v
     
     // Get all existing permissions starting with 'route_'
     const existingRoutePermissions = await dbMethods.all(db, 
-      'SELECT name FROM permissions_master WHERE name LIKE "route_%"',
+      'SELECT name FROM base_permissions_master WHERE name LIKE "route_%"',
       []
     );
     
@@ -281,28 +281,28 @@ router.get('/missing-routes', authenticateToken, checkPermissions(['permission_v
     // Define all expected route permissions based on current codebase analysis
     const expectedRoutePermissions = [
       // Feature toggles
-      { name: 'route_get_feature_toggles', description: 'Access to list all feature toggles', category: 'feature_toggles' },
-      { name: 'route_get_feature_toggles_name', description: 'Access to get specific feature toggle by name', category: 'feature_toggles' },
-      { name: 'route_patch_feature_toggles_update', description: 'Access to update feature toggle status', category: 'feature_toggles' },
+      { name: 'route_get_base_feature_toggles', description: 'Access to list all feature toggles', category: 'base_feature_toggles' },
+      { name: 'route_get_base_feature_toggles_name', description: 'Access to get specific feature toggle by name', category: 'base_feature_toggles' },
+      { name: 'route_patch_base_feature_toggles_update', description: 'Access to update feature toggle status', category: 'base_feature_toggles' },
       
       // File upload
       { name: 'route_post_file_upload_upload', description: 'Access to upload files', category: 'file_upload' },
       
       // Payment QR codes
-      { name: 'route_get_payment_qr_codes', description: 'Access to list all QR codes', category: 'payment' },
-      { name: 'route_get_payment_qr_codes_id', description: 'Access to get specific QR code by ID', category: 'payment' },
-      { name: 'route_post_payment_qr_codes', description: 'Access to create new QR code', category: 'payment' },
-      { name: 'route_post_payment_qr_codes_id_activate', description: 'Access to activate QR code', category: 'payment' },
-      { name: 'route_delete_payment_qr_codes_id', description: 'Access to delete QR code', category: 'payment' },
-      { name: 'route_put_payment_qr_codes_id', description: 'Access to update QR code', category: 'payment' },
-      { name: 'route_patch_payment_qr_codes_id_deactivate', description: 'Access to deactivate QR code', category: 'payment' },
-      { name: 'route_get_payment_qr_codes_id_image', description: 'Access to get QR code image', category: 'payment' },
+      { name: 'route_get_base_payment_qr_codes', description: 'Access to list all QR codes', category: 'payment' },
+      { name: 'route_get_base_payment_qr_codes_id', description: 'Access to get specific QR code by ID', category: 'payment' },
+      { name: 'route_post_base_payment_qr_codes', description: 'Access to create new QR code', category: 'payment' },
+      { name: 'route_post_base_payment_qr_codes_id_activate', description: 'Access to activate QR code', category: 'payment' },
+      { name: 'route_delete_base_payment_qr_codes_id', description: 'Access to delete QR code', category: 'payment' },
+      { name: 'route_put_base_payment_qr_codes_id', description: 'Access to update QR code', category: 'payment' },
+      { name: 'route_patch_base_payment_qr_codes_id_deactivate', description: 'Access to deactivate QR code', category: 'payment' },
+      { name: 'route_get_base_payment_qr_codes_id_image', description: 'Access to get QR code image', category: 'payment' },
       
       // Payment transactions
-      { name: 'route_post_payment_transactions', description: 'Access to create payment transaction', category: 'payment' },
-      { name: 'route_get_payment_transactions', description: 'Access to list all transactions', category: 'payment' },
-      { name: 'route_get_payment_transactions_id', description: 'Access to get specific transaction', category: 'payment' },
-      { name: 'route_put_payment_transactions_id_verify', description: 'Access to verify transaction', category: 'payment' },
+      { name: 'route_post_base_payment_transactions', description: 'Access to create payment transaction', category: 'payment' },
+      { name: 'route_get_base_payment_transactions', description: 'Access to list all transactions', category: 'payment' },
+      { name: 'route_get_base_payment_transactions_id', description: 'Access to get specific transaction', category: 'payment' },
+      { name: 'route_put_base_payment_transactions_id_verify', description: 'Access to verify transaction', category: 'payment' },
       { name: 'route_get_payment_status', description: 'Access to check payment feature status', category: 'payment' },
       
       // Widget config
@@ -415,7 +415,7 @@ router.post('/create-missing-routes', [
     };
     
     // Get Admin role for auto-assignment
-    const adminRole = await dbMethods.get(db, 'SELECT role_id FROM roles_master WHERE name = ?', ['Admin']);
+    const adminRole = await dbMethods.get(db, 'SELECT role_id FROM base_roles_master WHERE name = ?', ['Admin']);
     
     for (const permission of permissions) {
       try {
@@ -423,7 +423,7 @@ router.post('/create-missing-routes', [
         
         // Check if permission already exists
         const existing = await dbMethods.get(db, 
-          'SELECT permission_id FROM permissions_master WHERE name = ?', 
+          'SELECT permission_id FROM base_permissions_master WHERE name = ?', 
           [name]
         );
         
@@ -434,7 +434,7 @@ router.post('/create-missing-routes', [
         
         // Create permission
         const result = await dbMethods.run(db, 
-          'INSERT INTO permissions_master (name, description) VALUES (?, ?)', 
+          'INSERT INTO base_permissions_master (name, description) VALUES (?, ?)', 
           [name, description]
         );
         
@@ -443,7 +443,7 @@ router.post('/create-missing-routes', [
         // Auto-assign to Admin role
         if (adminRole) {
           await dbMethods.run(db, 
-            'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
+            'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)',
             [adminRole.role_id, newPermissionId]
           );
         }
@@ -494,7 +494,7 @@ router.get('/roles-permissions', authenticateToken, checkPermissions(['permissio
     
     // Get all roles
     const roles = await dbMethods.all(db, 
-      'SELECT role_id, name, description, created_at FROM roles_master ORDER BY name',
+      'SELECT role_id, name, description, created_at FROM base_roles_master ORDER BY name',
       []
     );
     
@@ -502,8 +502,8 @@ router.get('/roles-permissions', authenticateToken, checkPermissions(['permissio
     for (const role of roles) {
       const permissions = await dbMethods.all(db, 
         `SELECT p.permission_id, p.name, p.description
-         FROM permissions_master p
-         JOIN role_permissions_tx rp ON p.permission_id = rp.permission_id
+         FROM base_permissions_master p
+         JOIN base_role_permissions_tx rp ON p.permission_id = rp.permission_id
          WHERE rp.role_id = ?
          ORDER BY p.name`,
         [role.role_id]
@@ -515,7 +515,7 @@ router.get('/roles-permissions', authenticateToken, checkPermissions(['permissio
     
     // Get total permission count for reference
     const totalPermissions = await dbMethods.get(db, 
-      'SELECT COUNT(*) as count FROM permissions_master',
+      'SELECT COUNT(*) as count FROM base_permissions_master',
       []
     );
     
@@ -561,14 +561,14 @@ router.post('/assign', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if role exists
-    const role = await dbMethods.get(db, 'SELECT role_id, name FROM roles_master WHERE role_id = ?', [role_id]);
+    const role = await dbMethods.get(db, 'SELECT role_id, name FROM base_roles_master WHERE role_id = ?', [role_id]);
     if (!role) {
       return res.status(404).json({ error: 'Role not found' });
     }
     
     // For Admin role, ensure it keeps all permissions
     if (role_id == 1) {
-      const allPermissions = await dbMethods.all(db, 'SELECT permission_id FROM permissions_master');
+      const allPermissions = await dbMethods.all(db, 'SELECT permission_id FROM base_permissions_master');
       const allPermissionIds = allPermissions.map(p => p.permission_id);
       
       // Check if all permissions are included
@@ -582,12 +582,12 @@ router.post('/assign', [
     }
     
     // Delete existing permissions first
-    await dbMethods.run(db, 'DELETE FROM role_permissions_tx WHERE role_id = ?', [role_id]);
+    await dbMethods.run(db, 'DELETE FROM base_role_permissions_tx WHERE role_id = ?', [role_id]);
     
     // Add new permissions
     for (const permissionId of permissions) {
       await dbMethods.run(db, 
-        'INSERT INTO role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
+        'INSERT INTO base_role_permissions_tx (role_id, permission_id) VALUES (?, ?)', 
         [role_id, permissionId]
       );
     }

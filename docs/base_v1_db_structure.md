@@ -14,7 +14,7 @@ The database is built using SQLite for development/non-production environments (
 
 ```
 +----------------+       +----------------+       +----------------+
-|  users_master  |       |  roles_master  |       |permissions_master|
+|  base_users_master  |       |  base_roles_master  |       |base_permissions_master|
 +----------------+       +----------------+       +----------------+
 | user_id (PK)   |       | role_id (PK)   |       |permission_id (PK)|
 | mobile_number  |       | name           |       | name          |
@@ -31,7 +31,7 @@ The database is built using SQLite for development/non-production environments (
         |                |                |               |
         |                |                |               |
 +-------+--------+       |    +--------+--+-----+         |
-| user_roles_tx  |-------+    | role_permissions_tx |-----+
+| base_user_roles_tx  |-------+    | base_role_permissions_tx |-----+
 +----------------+            +--------------------+
 | user_role_id (PK)           | role_permission_id (PK) |
 | user_id (FK)    |           | role_id (FK)      |
@@ -41,7 +41,7 @@ The database is built using SQLite for development/non-production environments (
         |
         |
 +-------+--------+
-| activity_logs_tx|
+| base_activity_logs_tx|
 +----------------+
 | activity_log_id (PK) |
 | user_id (FK)   |
@@ -60,7 +60,7 @@ The database is built using SQLite for development/non-production environments (
 PRAGMA foreign_keys = ON;
 
 -- Create users table (master data)
-CREATE TABLE IF NOT EXISTS users_master (
+CREATE TABLE IF NOT EXISTS base_users_master (
     user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     mobile_number TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE IF NOT EXISTS users_master (
 );
 
 -- Create roles table (master data)
-CREATE TABLE IF NOT EXISTS roles_master (
+CREATE TABLE IF NOT EXISTS base_roles_master (
     role_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     description TEXT,
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS roles_master (
 );
 
 -- Create permissions table (master data)
-CREATE TABLE IF NOT EXISTS permissions_master (
+CREATE TABLE IF NOT EXISTS base_permissions_master (
     permission_id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT UNIQUE NOT NULL,
     description TEXT,
@@ -91,29 +91,29 @@ CREATE TABLE IF NOT EXISTS permissions_master (
 );
 
 -- Create user_roles junction table (transaction data)
-CREATE TABLE IF NOT EXISTS user_roles_tx (
+CREATE TABLE IF NOT EXISTS base_user_roles_tx (
     user_role_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     role_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES users_master(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles_master(role_id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES base_users_master(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (role_id) REFERENCES base_roles_master(role_id) ON DELETE CASCADE
 );
 
 -- Create role_permissions junction table (transaction data)
-CREATE TABLE IF NOT EXISTS role_permissions_tx (
+CREATE TABLE IF NOT EXISTS base_role_permissions_tx (
     role_permission_id INTEGER PRIMARY KEY AUTOINCREMENT,
     role_id INTEGER NOT NULL,
     permission_id INTEGER NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(role_id, permission_id),
-    FOREIGN KEY (role_id) REFERENCES roles_master(role_id) ON DELETE CASCADE,
-    FOREIGN KEY (permission_id) REFERENCES permissions_master(permission_id) ON DELETE CASCADE
+    FOREIGN KEY (role_id) REFERENCES base_roles_master(role_id) ON DELETE CASCADE,
+    FOREIGN KEY (permission_id) REFERENCES base_permissions_master(permission_id) ON DELETE CASCADE
 );
 
 -- Create activity_logs table (transaction data)
-CREATE TABLE IF NOT EXISTS activity_logs_tx (
+CREATE TABLE IF NOT EXISTS base_activity_logs_tx (
     activity_log_id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
     action TEXT NOT NULL,
@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS activity_logs_tx (
     ip_address TEXT,
     user_agent TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users_master(user_id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES base_users_master(user_id) ON DELETE SET NULL
 );
 ```
 
@@ -129,12 +129,12 @@ CREATE TABLE IF NOT EXISTS activity_logs_tx (
 
 ```sql
 -- Insert default roles
-INSERT INTO roles_master (name, description) VALUES 
+INSERT INTO base_roles_master (name, description) VALUES 
     ('Admin', 'Administrator with full system access'),
     ('User', 'Standard user with limited access');
 
 -- Insert default permissions
-INSERT INTO permissions_master (name, description) VALUES
+INSERT INTO base_permissions_master (name, description) VALUES
     ('user_view', 'Can view user details'),
     ('user_create', 'Can create users'),
     ('user_edit', 'Can edit user details'),
@@ -147,30 +147,30 @@ INSERT INTO permissions_master (name, description) VALUES
     ('permission_assign', 'Can assign permissions to roles');
 
 -- Assign all permissions to Admin role
-INSERT INTO role_permissions_tx (role_id, permission_id)
+INSERT INTO base_role_permissions_tx (role_id, permission_id)
 SELECT 
-    (SELECT role_id FROM roles_master WHERE name = 'Admin'), 
+    (SELECT role_id FROM base_roles_master WHERE name = 'Admin'), 
     permission_id 
-FROM permissions_master;
+FROM base_permissions_master;
 
 -- Assign basic permissions to User role
-INSERT INTO role_permissions_tx (role_id, permission_id)
+INSERT INTO base_role_permissions_tx (role_id, permission_id)
 SELECT 
-    (SELECT role_id FROM roles_master WHERE name = 'User'), 
+    (SELECT role_id FROM base_roles_master WHERE name = 'User'), 
     permission_id 
-FROM permissions_master 
+FROM base_permissions_master 
 WHERE name IN ('user_view');
 
 -- Insert default admin user with password Admin@123
-INSERT INTO users_master (mobile_number, email, password_hash, first_name, last_name) 
+INSERT INTO base_users_master (mobile_number, email, password_hash, first_name, last_name) 
 VALUES ('9999999999', 'admin@employdex.com', '$2a$10$HCJ5Yd0YR1P4TGPJOyyAWe6jVXnjYQLTP8EuoNRPnT4l4XzUKCNbS', 'Admin', 'User');
 -- Note: password_hash is for 'Admin@123' using bcrypt
 
 -- Assign Admin role to the admin user
-INSERT INTO user_roles_tx (user_id, role_id)
+INSERT INTO base_user_roles_tx (user_id, role_id)
 VALUES (
-    (SELECT user_id FROM users_master WHERE email = 'admin@employdex.com'),
-    (SELECT role_id FROM roles_master WHERE name = 'Admin')
+    (SELECT user_id FROM base_users_master WHERE email = 'admin@employdex.com'),
+    (SELECT role_id FROM base_roles_master WHERE name = 'Admin')
 );
 ```
 
@@ -178,7 +178,7 @@ VALUES (
 
 ### Table Descriptions
 
-1. **users_master**
+1. **base_users_master**
    - Purpose: Stores user account information
    - Key fields:
      - `user_id`: Unique identifier for each user
@@ -187,35 +187,35 @@ VALUES (
      - `password_hash`: Bcrypt-hashed password
      - `is_active`: Flag indicating if the account is active
 
-2. **roles_master**
+2. **base_roles_master**
    - Purpose: Stores role definitions for RBAC
    - Key fields:
      - `role_id`: Unique identifier for each role
      - `name`: Role name (e.g., "Admin", "User")
      - `description`: Detailed description of the role
 
-3. **permissions_master**
+3. **base_permissions_master**
    - Purpose: Stores individual permission definitions
    - Key fields:
      - `permission_id`: Unique identifier for each permission
      - `name`: Permission name (e.g., "user_create")
      - `description`: Detailed description of what the permission allows
 
-4. **user_roles_tx**
+4. **base_user_roles_tx**
    - Purpose: Junction table establishing many-to-many relationship between users and roles
    - Key fields:
      - `user_role_id`: Unique identifier for each association
-     - `user_id`: References a user in users_master
-     - `role_id`: References a role in roles_master
+     - `user_id`: References a user in base_users_master
+     - `role_id`: References a role in base_roles_master
 
-5. **role_permissions_tx**
+5. **base_role_permissions_tx**
    - Purpose: Junction table establishing many-to-many relationship between roles and permissions
    - Key fields:
      - `role_permission_id`: Unique identifier for each association
-     - `role_id`: References a role in roles_master
-     - `permission_id`: References a permission in permissions_master
+     - `role_id`: References a role in base_roles_master
+     - `permission_id`: References a permission in base_permissions_master
 
-6. **activity_logs_tx**
+6. **base_activity_logs_tx**
    - Purpose: Stores user activity for auditing and security monitoring
    - Key fields:
      - `activity_log_id`: Unique identifier for each log entry
