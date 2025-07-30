@@ -124,6 +124,7 @@ const fileUploadRouter = require('./routes/file-upload');
 const paymentQrCodesRouter = require('./routes/payment-qr-codes');
 const paymentTransactionsRouter = require('./routes/payment-transactions');
 const widgetConfigRouter = require('./routes/widget-config');
+const questionBankRouter = require('./routes/questionbank');
 // const attendanceRouter = require('./routes/attendance');
 
 // Register feature toggle routes
@@ -143,6 +144,9 @@ app.use('/api', widgetConfigRoutes);
 // Register file upload routes
 const fileUploadRoutes = require('./routes/file-upload');
 app.use('/api', fileUploadRoutes);
+
+// Register question bank routes
+app.use('/api/questionbank', questionBankRouter);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

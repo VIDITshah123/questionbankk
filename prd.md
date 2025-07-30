@@ -14,11 +14,11 @@ A web application for managing and collaborating on multiple-choice questions (M
 - Manage employees:
   - Add new employees
   - Remove employees
-  - Assign/change employee roles (Questioner/Reviewer)
+  - Assign/change employee roles (question_writer/Reviewer)
 
 ### 2.3 Employee Roles
 
-#### Questioner
+#### question_writer
 - Add new questions
 - Edit own questions
 - Delete own questions
@@ -27,10 +27,10 @@ A web application for managing and collaborating on multiple-choice questions (M
 - Categorize questions with categories and subcategories
 - Questions can have single or multiple correct answers
 - Limited to one vote (up/down) per question
-- Questioner should see the questions that are invalidated and reasons for those 
-- Questioner should see the score for each question
-- Questioner should see the leaderboard by score of questions
-- Questioner should see the leaderboard by score of employees
+- question_writer should see the questions that are invalidated and reasons for those 
+- question_writer should see the score for each question
+- question_writer should see the leaderboard by score of questions
+- question_writer should see the leaderboard by score of employees
 
 
 #### Reviewer
@@ -67,8 +67,8 @@ A web application for managing and collaborating on multiple-choice questions (M
 - leaderboard by score of questions
 ### 4.2 Question Management
 - Add new questions
-- Edit existing questions (for questioners, only their own)
-- Delete questions (for questioners, only their own)
+- Edit existing questions (for question_writers, only their own)
+- Delete questions (for question_writers, only their own)
 - Categorization with categories and subcategories
 
 ### 4.3 Voting System
