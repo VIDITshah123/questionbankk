@@ -18,11 +18,11 @@ cd "../$APP_NAME"
 
 # 2. Rename database file
 echo "Renaming database file to $DB_NAME..."
-mv db/employdex-base.db "db/$DB_NAME"
+mv db/questionbank.db "db/$DB_NAME"
 
 # 3. Rename references to the database file
 echo "Updating database references..."
-grep -rl "employdex-base.db" . | xargs sed -i "" "s/employdex-base.db/$DB_NAME/g"
+grep -rl "questionbank.db" . | xargs sed -i "" "s/questionbank.db/$DB_NAME/g"
 
 # 4. Set frontend and backend ports
 echo "Updating port numbers..."

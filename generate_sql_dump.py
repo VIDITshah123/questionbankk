@@ -74,7 +74,7 @@ def dump_database(db_path, output_file):
     print(f"SQL dump created successfully: {output_file}")
 
 if __name__ == "__main__":
-    db_path = os.path.join('db', 'employdex-base.db')
+    db_path = os.path.join('db', 'questionbank.db')
     output_file = 'base_v2.sql'
     
     if not os.path.exists(db_path):

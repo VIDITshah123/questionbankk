@@ -1,5 +1,5 @@
 {
-  "name": "employdex-base-platform",
+  "name": "questionbank-platform",
   "version": "0.1.0",
   "description": "EmployDEX Base Platform with user management and role-based access control",
   "main": "index.js",

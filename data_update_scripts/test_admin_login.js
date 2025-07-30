@@ -3,11 +3,11 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // Constants from the app
-const JWT_SECRET = 'employdex-base-v1-secure-jwt-secret';
+const JWT_SECRET = 'questionbank-v1-secure-jwt-secret';
 const JWT_EXPIRES_IN = '24h';
 
 // Connect to the SQLite database
-const db = new sqlite3.Database('./db/employdex-base.db', (err) => {
+const db = new sqlite3.Database('./db/questionbank.db', (err) => {
   if (err) {
     console.error('Error connecting to the database:', err.message);
     process.exit(1);

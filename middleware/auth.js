@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 
 // JWT Secret - Should be in environment variables for production
 // JWT Secret - Should match the one used in authentication module
-const JWT_SECRET = 'employdex-base-v1-secure-jwt-secret';
+const JWT_SECRET = 'questionbank-v1-secure-jwt-secret';
 
 /**
  * Authentication middleware to verify JWT tokens

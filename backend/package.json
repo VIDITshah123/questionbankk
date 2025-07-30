@@ -1,5 +1,5 @@
 {
-  "name": "employdex-base-platform-backend",
+  "name": "questionbank-platform-backend",
   "version": "0.1.0",
   "description": "Backend API for EmployDEX Base Platform",
   "main": "app.js",
