@@ -1,44 +1,150 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { useTheme, alpha } from '@mui/material/styles';
 import { 
-  FaHome, 
-  FaUsers, 
-  FaUserTag, 
-  FaShieldAlt, 
-  FaList, 
-  FaChartLine, 
-  FaToggleOn,
-  FaCreditCard
-} from 'react-icons/fa';
+  Drawer, 
+  List, 
+  ListItem, 
+  ListItemButton, 
+  ListItemIcon, 
+  ListItemText, 
+  Divider, 
+  Tooltip, 
+  Typography, 
+  Box, 
+  Collapse,
+  IconButton,
+  Avatar,
+  useMediaQuery
+} from '@mui/material';
+import { 
+  Dashboard as DashboardIcon,
+  People as PeopleIcon,
+  AssignmentInd as RolesIcon,
+  Security as PermissionsIcon,
+  ListAlt as ListIcon,
+  Assessment as AnalyticsIcon,
+  CreditCard as PaymentIcon,
+  ToggleOn as ToggleIcon,
+  ChevronLeft as ChevronLeftIcon,
+  ChevronRight as ChevronRightIcon,
+  ExpandLess,
+  ExpandMore,
+  Settings as SettingsIcon,
+  Logout as LogoutIcon,
+  MenuBook as QuestionsIcon,
+  Category as CategoriesIcon,
+  School as SchoolIcon,
+  MenuBook as MenuBookIcon,
+  EmojiEvents as LeaderboardIcon,
+  Star as StarIcon,
+  Person as PersonIcon
+} from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { featureToggleAPI } from '../../services/api';
 
-const Sidebar = ({ collapsed }) => {
+const drawerWidth = 260;
+const collapsedWidth = 72;
+
+const Sidebar = ({ collapsed, onToggleCollapse }) => {
+  const theme = useTheme();
   const location = useLocation();
-  const { hasPermission, hasRole, currentUser } = useAuth();
-  const token = localStorage.getItem('token');
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const { hasPermission, hasRole, currentUser, logout } = useAuth();
   const [featureToggles, setFeatureToggles] = useState({});
   const [loading, setLoading] = useState(true);
-  
+  const [expandedItems, setExpandedItems] = useState({});
+  const [hoveredItem, setHoveredItem] = useState(null);
+
+  // Grouped menu items
+  const menuGroups = [
+    {
+      group: 'Main',
+      items: [
+        {
+          name: 'Dashboard',
+          path: '/dashboard',
+          icon: <DashboardIcon />,
+          permission: null
+        },
+        {
+          name: 'Questions',
+          path: '/questions',
+          icon: <MenuBookIcon />,
+          permission: 'question_view',
+          children: [
+            { name: 'All Questions', path: '/questions' },
+            { name: 'Add New', path: '/questions/new' },
+            { name: 'Categories', path: '/questions/categories' },
+          ]
+        },
+        {
+          name: 'Leaderboard',
+          path: '/leaderboard',
+          icon: <LeaderboardIcon />,
+          permission: 'leaderboard_view'
+        },
+        {
+          name: 'Favorites',
+          path: '/favorites',
+          icon: <StarIcon />,
+          permission: 'favorite_view'
+        },
+      ]
+    },
+    {
+      group: 'Administration',
+      items: [
+        {
+          name: 'Users',
+          path: '/users',
+          icon: <PeopleIcon />,
+          permission: 'user_view'
+        },
+        {
+          name: 'Roles',
+          path: '/roles',
+          icon: <RolesIcon />,
+          permission: 'role_view'
+        },
+        {
+          name: 'Permissions',
+          path: '/permissions',
+          icon: <PermissionsIcon />,
+          permission: 'permission_view'
+        },
+        {
+          name: 'Activity Logs',
+          path: '/logs',
+          icon: <ListIcon />,
+          permission: 'permission_view',
+          featureToggle: 'activity_logs'
+        },
+        {
+          name: 'Analytics',
+          path: '/analytics',
+          icon: <AnalyticsIcon />,
+          permission: 'dashboard_view',
+          featureToggle: 'analytics'
+        }
+      ]
+    }
+  ];
+
   // Fetch feature toggles when component mounts
   useEffect(() => {
     const fetchFeatureToggles = async () => {
       try {
         const response = await featureToggleAPI.getToggles();
-        
-        console.log('Feature toggles response:', response.data);
-        
-        // Convert to a map for easier checking
         const togglesMap = {};
+        
         response.data.forEach(toggle => {
-          // Check if the toggle has feature_name or name property
           const name = toggle.feature_name || toggle.name;
           const isEnabled = toggle.enabled === 1 || toggle.enabled === true;
-          console.log(`Toggle ${name} is ${isEnabled ? 'enabled' : 'disabled'}`);
           togglesMap[name] = isEnabled;
         });
         
-        console.log('Feature toggles map:', togglesMap);
         setFeatureToggles(togglesMap);
       } catch (error) {
         console.error('Failed to fetch feature toggles:', error);
@@ -47,176 +153,390 @@ const Sidebar = ({ collapsed }) => {
       }
     };
     
-    if (token) {
-      fetchFeatureToggles();
-    }
-  }, [token]);
-  
-  // Define base menu items that will be available to everyone with permissions
-  const baseMenuItems = [
-    {
-      name: 'Dashboard',
-      path: '/dashboard',
-      icon: <FaHome />,
-      permission: null // Everyone can access dashboard
-    },
-    {
-      name: 'Users',
-      path: '/users',
-      icon: <FaUsers />,
-      permission: 'user_view'
-    },
-    {
-      name: 'Roles',
-      path: '/roles',
-      icon: <FaUserTag />,
-      permission: 'role_view'
-    },
-    {
-      name: 'File Upload Settings',
-      path: '/admin/file-upload-settings',
-      icon: <FaCreditCard />,
-      permission: 'role_view'
-    },
-    {
-      name: 'Permissions',
-      path: '/permissions',
-      icon: <FaShieldAlt />,
-      permission: 'permission_view'
-    },
-    {
-      name: 'Activity Logs',
-      path: '/logs',
-      icon: <FaList />,
-      permission: 'permission_view'
-    },
-    {
-      name: 'Analytics',
-      path: '/analytics',
-      icon: <FaChartLine />,
-      permission: 'dashboard_view'
-    },
-    {
-      name: 'Attendance',
-      path: '/attendance',
-      icon: <FaList />,
-      permission: 'attendance_view'
-    }
-  ];
-  
-  // Start with base menu items
-  const menuItems = [...baseMenuItems];
-  
-  // For admin users, always add the payment module regardless of feature toggles
-  if (hasRole && hasRole(['Admin', 'admin'])) {
-    console.log('Admin user detected - adding Payment module');
-    menuItems.push({
-      name: 'Payment',
-      path: '/payment',
-      icon: <FaCreditCard />,
-      permission: null // No permission check for admins
-    });
-    
-    // Also add Feature Toggles menu item for admin
-    menuItems.push({
-      name: 'Feature Toggles',
-      path: '/roles/feature-toggles',
-      icon: <FaToggleOn />,
-      permission: null
-    });
-  } 
-  // For non-admin users who have payment_view permission, show payment module if feature toggle is enabled
-  else if (hasPermission(['payment_view']) && featureToggles['payment_integration']) {
-    console.log('Non-admin user with payment_view permission - adding Payment module');
-    menuItems.push({
-      name: 'Payment',
-      path: '/payment',
-      icon: <FaCreditCard />,
-      permission: 'payment_view',
-      featureToggle: 'payment_integration'
-    });
-  }
-  
-  // Add Feature Toggles for full_access users who are not admins
-  if (hasRole && hasRole(['full_access']) && !hasRole(['Admin', 'admin'])) {
-    menuItems.push({
-      name: 'Feature Toggles',
-      path: '/roles/feature-toggles',
-      icon: <FaToggleOn />,
-      permission: null
-    });
-  }
+    fetchFeatureToggles();
+  }, []);
 
-  return (
-    <div className={`sidebar ${collapsed ? 'collapsed' : ''}`} style={{
-      width: collapsed ? '70px' : '250px',
-      minHeight: '100vh',
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      backgroundColor: '#343a40',
-      transition: 'width 0.3s',
-      boxShadow: '0 0 10px rgba(0, 0, 0, 0.1)',
-      padding: '20px 0',
-      zIndex: 1030
-    }}>
-      <div className="d-flex justify-content-center align-items-center py-3 mb-4" style={{ color: '#fff' }}>
-        {!collapsed && <h4 className="m-0">EmployDEX</h4>}
-        {collapsed && <h4 className="m-0">E</h4>}
-      </div>
-      <ul className="nav flex-column">
-        {menuItems.map((item) => {
-          // Skip rendering menu item if user doesn't have permission
-          if (item.permission && !hasPermission([item.permission])) {
-            return null;
-          }
-          
-          // Skip rendering menu item if its feature toggle is disabled
-          // But always show payment module to admin users regardless of feature toggle
-          if (item.featureToggle && !featureToggles[item.featureToggle]) {
-            // Special case for payment module - always show to admin users
-            if (item.name === 'Payment' && hasRole(['Admin'])) {
-              console.log('Showing Payment module to Admin user regardless of feature toggle');
-            } else {
-              console.log(`Hiding ${item.name} module due to disabled feature toggle ${item.featureToggle}`);
-              return null;
-            }
-          }
-          
-          const isActive = location.pathname.startsWith(item.path);
-          
-          return (
-            <li 
-              key={item.name} 
-              className="nav-item mb-2"
-              title={collapsed ? item.name : ''}
+  // Initialize expanded state for collapsible items
+  useEffect(() => {
+    const initialExpanded = {};
+    menuGroups.forEach(group => {
+      group.items.forEach(item => {
+        if (item.children) {
+          // Check if any child path matches current location
+          const isActive = item.children.some(child => 
+            location.pathname.startsWith(child.path)
+          ) || location.pathname === item.path;
+          initialExpanded[item.name] = isActive;
+        }
+      });
+    });
+    setExpandedItems(initialExpanded);
+  }, [location.pathname]);
+
+  const handleToggleExpand = (name) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [name]: !prev[name]
+    }));
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  if (loading) return null;
+
+  const renderMenuItems = (items, level = 0) => {
+    return items
+      .filter(item => !item.permission || hasPermission([item.permission]))
+      .filter(item => !item.featureToggle || featureToggles[item.featureToggle])
+      .map((item) => {
+        const hasChildren = item.children && item.children.length > 0;
+        const isActive = location.pathname === item.path || 
+          (hasChildren && item.children.some(child => 
+            location.pathname.startsWith(child.path)
+          ));
+        
+        const listItem = (
+          <ListItem 
+            key={item.path} 
+            disablePadding 
+            sx={{
+              display: 'block',
+              mb: 0.5,
+              '&:hover .MuiListItemButton-root': {
+                bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.16 : 0.08),
+              },
+            }}
+          >
+            <Tooltip 
+              title={collapsed ? item.name : ''} 
+              placement="right"
+              disableHoverListener={!collapsed}
             >
-              <Link 
-                to={item.path} 
-                className={`nav-link ${isActive ? 'active' : ''}`} 
-                style={{
-                  color: isActive ? '#fff' : '#ced4da',
-                  backgroundColor: isActive ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                  padding: collapsed ? '10px 0' : '10px 20px',
-                  display: 'flex',
-                  alignItems: 'center',
+              <ListItemButton
+                component={RouterLink}
+                to={item.path}
+                selected={isActive}
+                onClick={() => hasChildren && handleToggleExpand(item.name)}
+                sx={{
+                  minHeight: 48,
                   justifyContent: collapsed ? 'center' : 'flex-start',
-                  borderRadius: '4px',
-                  margin: '0 10px',
-                  transition: 'all 0.3s'
+                  px: 2.5,
+                  py: 1.5,
+                  borderRadius: 1,
+                  mx: 1,
+                  transition: 'all 0.2s',
+                  '&.Mui-selected': {
+                    bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.24 : 0.16),
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.32 : 0.24),
+                    },
+                  },
+                  '& .MuiListItemIcon-root': {
+                    minWidth: 0,
+                    mr: collapsed ? 'auto' : 2,
+                    justifyContent: 'center',
+                    color: isActive ? theme.palette.primary.main : theme.palette.text.secondary,
+                  },
+                  '&:hover .MuiListItemIcon-root': {
+                    color: theme.palette.primary.main,
+                  },
                 }}
               >
-                <span className="me-2">{item.icon}</span>
-                {!collapsed && <span>{item.name}</span>}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-      <div className="mt-auto text-center p-3" style={{ color: '#6c757d', fontSize: '0.8rem' }}>
-        {!collapsed && <span>EmployDEX &copy; 2025</span>}
-      </div>
-    </div>
+                <ListItemIcon>{item.icon}</ListItemIcon>
+                {!collapsed && (
+                  <>
+                    <ListItemText 
+                      primary={item.name} 
+                      primaryTypographyProps={{
+                        variant: 'body2',
+                        fontWeight: isActive ? 600 : 400,
+                        color: isActive ? 'text.primary' : 'text.secondary',
+                      }}
+                    />
+                    {hasChildren && (
+                      expandedItems[item.name] ? <ExpandLess /> : <ExpandMore />
+                    )}
+                  </>
+                )}
+              </ListItemButton>
+            </Tooltip>
+
+            {hasChildren && !collapsed && (
+              <Collapse in={expandedItems[item.name]} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  {item.children.map((child) => {
+                    const isChildActive = location.pathname === child.path;
+                    return (
+                      <ListItemButton
+                        key={child.path}
+                        component={RouterLink}
+                        to={child.path}
+                        selected={isChildActive}
+                        sx={{
+                          pl: 4,
+                          py: 1,
+                          mx: 1,
+                          borderRadius: 1,
+                          '&.Mui-selected': {
+                            bgcolor: 'transparent',
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.primary.main, theme.palette.mode === 'dark' ? 0.08 : 0.04),
+                            },
+                          },
+                        }}
+                      >
+                        <ListItemText 
+                          primary={child.name}
+                          primaryTypographyProps={{
+                            variant: 'body2',
+                            color: isChildActive ? 'text.primary' : 'text.secondary',
+                            fontWeight: isChildActive ? 500 : 400,
+                          }}
+                        />
+                      </ListItemButton>
+                    );
+                  })}
+                </List>
+              </Collapse>
+            )}
+          </ListItem>
+        );
+
+        return listItem;
+      });
+  };
+
+  const drawer = (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100vh',
+        bgcolor: 'background.paper',
+        borderRight: '1px solid',
+        borderColor: 'divider',
+      }}
+    >
+      {/* Header */}
+      <Box 
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          p: 2,
+          minHeight: 64,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        {!collapsed && (
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box
+              component="img"
+              src="/logo192.png"
+              alt="Logo"
+              sx={{ width: 32, height: 32, mr: 1 }}
+            />
+            <Typography 
+              variant="h6" 
+              noWrap 
+              component="div"
+              sx={{
+                fontWeight: 700,
+                background: theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(45deg, #90caf9, #64b5f6)' 
+                  : 'linear-gradient(45deg, #1976d2, #2196f3)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+              }}
+            >
+              QuestionBank
+            </Typography>
+          </Box>
+        )}
+        {!collapsed && (
+          <IconButton onClick={onToggleCollapse} size="small">
+            {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
+          </IconButton>
+        )}
+      </Box>
+
+      {/* Scrollable content */}
+      <Box 
+        sx={{
+          flexGrow: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: theme.palette.mode === 'dark' ? '#555' : '#ccc',
+            borderRadius: '4px',
+          },
+        }}
+      >
+        {menuGroups.map((group, index) => (
+          <Box key={index} sx={{ mb: 2 }}>
+            {!collapsed && group.group && (
+              <Typography 
+                variant="caption" 
+                sx={{
+                  px: 3,
+                  py: 1,
+                  display: 'block',
+                  color: 'text.secondary',
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontSize: '0.7rem',
+                }}
+              >
+                {group.group}
+              </Typography>
+            )}
+            <List disablePadding>
+              {renderMenuItems(group.items)}
+            </List>
+            {index < menuGroups.length - 1 && <Divider sx={{ my: 1 }} />}
+          </Box>
+        ))}
+      </Box>
+
+      {/* User profile and actions */}
+      <Box 
+        sx={{
+          p: 1.5,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+          bgcolor: 'background.default',
+        }}
+      >
+        <Tooltip title={collapsed ? currentUser?.email : ''} placement="right">
+          <Box 
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              p: 1,
+              borderRadius: 1,
+              cursor: 'pointer',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
+            }}
+            onClick={() => navigate('/profile')}
+          >
+            <Avatar 
+              sx={{
+                width: collapsed ? 32 : 36,
+                height: collapsed ? 32 : 36,
+                mr: collapsed ? 0 : 1.5,
+                bgcolor: 'primary.main',
+                color: 'primary.contrastText',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
+              {currentUser?.firstName?.[0]}{currentUser?.lastName?.[0]}
+            </Avatar>
+            {!collapsed && (
+              <Box sx={{ overflow: 'hidden' }}>
+                <Typography 
+                  variant="subtitle2" 
+                  noWrap
+                  sx={{ fontWeight: 600 }}
+                >
+                  {currentUser?.firstName} {currentUser?.lastName}
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  noWrap
+                  sx={{ 
+                    display: 'block',
+                    color: 'text.secondary',
+                    fontSize: '0.7rem',
+                  }}
+                >
+                  {currentUser?.email}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Tooltip>
+
+        {!collapsed && (
+          <Box sx={{ display: 'flex', mt: 1 }}>
+            <Tooltip title="Settings">
+              <IconButton 
+                size="small" 
+                sx={{ ml: 'auto' }}
+                onClick={() => navigate('/settings')}
+              >
+                <SettingsIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Logout">
+              <IconButton 
+                size="small" 
+                onClick={handleLogout}
+              >
+                <LogoutIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+
+  return (
+    <>
+      {isMobile ? (
+        <Drawer
+          variant="temporary"
+          open={!collapsed}
+          onClose={onToggleCollapse}
+          ModalProps={{ keepMounted: true }}
+          sx={{
+            '& .MuiDrawer-paper': {
+              width: drawerWidth,
+              boxSizing: 'border-box',
+              border: 'none',
+              boxShadow: theme.shadows[8],
+            },
+          }}
+        >
+          {drawer}
+        </Drawer>
+      ) : (
+        <Drawer
+          variant="permanent"
+          open={!collapsed}
+          sx={{
+            width: collapsed ? collapsedWidth : drawerWidth,
+            flexShrink: 0,
+            '& .MuiDrawer-paper': {
+              width: collapsed ? collapsedWidth : drawerWidth,
+              boxSizing: 'border-box',
+              border: 'none',
+              transition: theme.transitions.create('width', {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.enteringScreen,
+              }),
+              overflowX: 'hidden',
+            },
+          }}
+        >
+          {drawer}
+        </Drawer>
+      )}
+    </>
   );
 };
 
