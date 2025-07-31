@@ -38,7 +38,9 @@ import {
   CloudUpload as CloudUploadIcon,
   Security as SecurityIcon,
   ArrowForward as ArrowForwardIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  Business as BusinessIcon,
+  AddCircleOutline as AddCircleOutlineIcon
 } from '@mui/icons-material';
 import { Chart as ChartJS, registerables } from 'chart.js';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
@@ -159,6 +161,7 @@ const Dashboard = () => {
     totalUsers: 0,
     totalQuestions: 0,
     totalCategories: 0,
+    totalCompanies: 0,  // Added for admin dashboard
     totalAttempts: 0,
     activeUsers: 0,
     pendingReviews: 0,
@@ -211,6 +214,10 @@ const Dashboard = () => {
   const isCompany = useMemo(() => {
     return roles.includes('Company');
   }, [roles]);
+  
+  const isAdmin = useMemo(() => {
+    return roles.includes('Admin');
+  }, [roles]);
 
   // Fetch dashboard data
   const fetchDashboardData = async (isRefresh = false) => {
@@ -226,6 +233,7 @@ const Dashboard = () => {
         totalUsers: 1242,
         totalQuestions: 5432,
         totalCategories: 23,
+        totalCompanies: 42,  // Added for admin dashboard
         totalAttempts: 12876,
         activeUsers: 342,
         pendingReviews: 23,
@@ -555,6 +563,85 @@ const Dashboard = () => {
                 onClick={() => navigate('/leaderboard')}
                 loading={isRefreshing}
               />
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Admin Dashboard */}
+      {isAdmin && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
+            Admin Dashboard
+          </Typography>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* Total Companies */}
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="Total Companies"
+                value={stats.totalCompanies?.toLocaleString() || '0'}
+                icon={<BusinessIcon />}
+                color="primary"
+                onClick={() => navigate('/admin/companies')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            {/* Total Questions */}
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="Total Questions"
+                value={stats.totalQuestions?.toLocaleString() || '0'}
+                icon={<QuestionIcon />}
+                color="success"
+                onClick={() => navigate('/questions')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            {/* Add New Company */}
+            <Grid item xs={12} md={4}>
+              <Card 
+                sx={{ 
+                  height: '100%', 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: 6,
+                  },
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  backgroundColor: 'transparent'
+                }}
+                onClick={() => navigate('/admin/companies/new')}
+              >
+                <CardContent sx={{ 
+                  flexGrow: 1, 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textAlign: 'center',
+                  p: 3
+                }}>
+                  <AddCircleOutlineIcon 
+                    sx={{ 
+                      fontSize: 48, 
+                      color: 'text.secondary',
+                      mb: 1
+                    }} 
+                  />
+                  <Typography variant="h6" color="text.secondary">
+                    Add New Company
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Register a new company account
+                  </Typography>
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
         </Box>
