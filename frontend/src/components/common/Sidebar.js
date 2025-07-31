@@ -38,7 +38,8 @@ import {
   MenuBook as MenuBookIcon,
   EmojiEvents as LeaderboardIcon,
   Star as StarIcon,
-  Person as PersonIcon
+  Person as PersonIcon,
+  CloudUpload as CloudUploadIcon
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { featureToggleAPI } from '../../services/api';
@@ -74,9 +75,9 @@ const Sidebar = ({ collapsed, onToggleCollapse }) => {
           icon: <MenuBookIcon />,
           permission: 'question_view',
           children: [
-            { name: 'All Questions', path: '/questions' },
-            { name: 'Add New', path: '/questions/new' },
-            { name: 'Categories', path: '/questions/categories' },
+            { name: 'All Questions', path: '/questions', permission: 'question_view' },
+            { name: 'Add New', path: '/questions/create', permission: 'question_create' },
+            { name: 'Categories', path: '/questions/categories', permission: 'question_manage_categories' },
           ]
         },
         {
@@ -100,32 +101,54 @@ const Sidebar = ({ collapsed, onToggleCollapse }) => {
           name: 'Users',
           path: '/users',
           icon: <PeopleIcon />,
-          permission: 'user_view'
+          permission: 'user_view',
+          children: [
+            { name: 'All Users', path: '/users', permission: 'user_view' },
+            { name: 'Create User', path: '/users/create', permission: 'user_create' },
+            { name: 'Bulk Upload', path: '/users/bulk-upload', permission: 'user_create' },
+          ]
         },
         {
           name: 'Roles',
           path: '/roles',
           icon: <RolesIcon />,
-          permission: 'role_view'
+          permission: 'role_view',
+          children: [
+            { name: 'All Roles', path: '/roles', permission: 'role_view' },
+            { name: 'Create Role', path: '/roles/create', permission: 'role_create' },
+            { name: 'Feature Toggles', path: '/roles/feature-toggles', permission: 'role_manage_features' },
+            { name: 'Bulk Upload', path: '/roles/bulk-upload', permission: 'role_create' },
+          ]
         },
         {
           name: 'Permissions',
           path: '/permissions',
           icon: <PermissionsIcon />,
-          permission: 'permission_view'
+          permission: 'permission_view',
+          children: [
+            { name: 'All Permissions', path: '/permissions', permission: 'permission_view' },
+            { name: 'Create Permission', path: '/permissions/create', permission: 'permission_create' }
+          ]
         },
         {
           name: 'Activity Logs',
           path: '/logs',
           icon: <ListIcon />,
-          permission: 'permission_view',
+          permission: 'log_view',
           featureToggle: 'activity_logs'
+        },
+        {
+          name: 'File Upload Settings',
+          path: '/admin/file-upload-settings',
+          icon: <CloudUploadIcon />,
+          permission: 'admin_settings_manage',
+          featureToggle: 'file_upload'
         },
         {
           name: 'Analytics',
           path: '/analytics',
           icon: <AnalyticsIcon />,
-          permission: 'dashboard_view',
+          permission: 'analytics_view',
           featureToggle: 'analytics'
         }
       ]

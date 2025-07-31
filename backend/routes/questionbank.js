@@ -446,10 +446,17 @@ router.delete('/questions/:id', [authenticateToken], async (req, res) => {
  * CATEGORIES ROUTES
  */
 
-// Get all categories
+// Get all categories with question counts
 router.get('/categories', [authenticateToken], async (req, res) => {
   try {
-    const categories = await dbMethods.all('SELECT * FROM qb_master_categories');
+    const categories = await dbMethods.all(`
+      SELECT 
+        c.*, 
+        (SELECT COUNT(*) FROM qb_master_questions q 
+         WHERE q.category_id = c.category_id AND q.is_active = 1) as question_count
+      FROM qb_master_categories c
+      ORDER BY c.category_name
+    `);
     res.json({ success: true, data: categories });
   } catch (err) {
     handleDBError(err, res);

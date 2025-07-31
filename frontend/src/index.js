@@ -5,6 +5,7 @@ import App from './App';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { FeatureToggleProvider } from './contexts/FeatureToggleContext';
+import { NotificationProvider } from './contexts/NotificationContext';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'react-toastify/dist/ReactToastify.css';
 import './styles/glassmorphism.css';
@@ -16,8 +17,10 @@ root.render(
     <Router>
       <AuthProvider>
         <FeatureToggleProvider>
-          <App />
-          <ToastContainer position="top-right" autoClose={3000} />
+          <NotificationProvider>
+            <App />
+            <ToastContainer position="top-right" autoClose={3000} />
+          </NotificationProvider>
         </FeatureToggleProvider>
       </AuthProvider>
     </Router>

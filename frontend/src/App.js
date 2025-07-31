@@ -18,6 +18,18 @@ import Unauthorized from './components/common/Unauthorized';
 // Dashboard Components
 import Dashboard from './components/dashboard/Dashboard';
 
+// Question Management Components
+import QuestionList from './components/questions/QuestionList';
+import QuestionCreate from './components/questions/QuestionCreate';
+import QuestionEdit from './components/questions/QuestionEdit';
+import QuestionCategories from './components/questions/QuestionCategories';
+
+// Leaderboard Components
+import Leaderboard from './components/leaderboard/Leaderboard';
+
+// Favorites Components
+import Favorites from './components/favorites/Favorites';
+
 // User Management Components
 import UserList from './components/users/UserList';
 import UserDetails from './components/users/UserDetails';
@@ -124,6 +136,20 @@ function App() {
           
           {/* Logging Routes */}
           <Route path="logs" element={<ProtectedRoute element={<ActivityLogs />} />} />
+          
+          {/* Question Management Routes */}
+          <Route path="questions">
+            <Route index element={withFeatureRoute(QuestionList, 'questions_list', 'view')} />
+            <Route path="create" element={<ProtectedRoute element={<QuestionCreate />} allowedRoles={['admin', 'content_creator']} />} />
+            <Route path="edit/:id" element={<ProtectedRoute element={<QuestionEdit />} allowedRoles={['admin', 'content_creator']} />} />
+            <Route path="categories" element={<ProtectedRoute element={<QuestionCategories />} allowedRoles={['admin', 'content_creator']} />} />
+          </Route>
+
+          {/* Leaderboard Route */}
+          <Route path="leaderboard" element={<ProtectedRoute element={<Leaderboard />} />} />
+          
+          {/* Favorites Route */}
+          <Route path="favorites" element={<ProtectedRoute element={<Favorites />} />} />
           
           {/* Payment Routes */}
           <Route path="payment" element={<ProtectedRoute element={<PaymentAdmin />} allowedRoles={['admin']} />} />

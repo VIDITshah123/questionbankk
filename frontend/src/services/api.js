@@ -174,6 +174,57 @@ export const featureToggleAPI = {
   updateToggle: (name, isEnabled) => api.patch('/feature-toggles/update', { name, is_enabled: isEnabled }),
 };
 
+// Question Bank API
+export const questionAPI = {
+  // Questions
+  getQuestions: (params) => api.get('/questions', { params }),
+  getQuestion: (id) => api.get(`/questions/${id}`),
+  createQuestion: (questionData) => api.post('/questions', questionData),
+  updateQuestion: (id, questionData) => api.put(`/questions/${id}`, questionData),
+  deleteQuestion: (id) => api.delete(`/questions/${id}`),
+  bulkDeleteQuestions: (questionIds) => api.delete('/questions/bulk-delete', { data: { questionIds } }),
+  
+  // Categories
+  getCategories: () => api.get('/questions/categories'),
+  createCategory: (categoryData) => api.post('/questions/categories', categoryData),
+  updateCategory: (id, categoryData) => api.put(`/questions/categories/${id}`, categoryData),
+  deleteCategory: (id) => api.delete(`/questions/categories/${id}`),
+  
+  // Favorites
+  getFavorites: (params) => api.get('/questions/favorites', { params }),
+  addFavorite: (questionId) => api.post(`/questions/${questionId}/favorite`),
+  removeFavorite: (questionId) => api.delete(`/questions/${questionId}/favorite`),
+  
+  // Import/Export
+  importQuestions: (formData, onUploadProgress) => api.post('/questions/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    },
+    onUploadProgress
+  }),
+  exportQuestions: (params) => api.get('/questions/export', { 
+    params,
+    responseType: 'blob' 
+  }),
+  downloadTemplate: () => api.get('/questions/template', { responseType: 'blob' })
+};
+
+// Leaderboard API
+export const leaderboardAPI = {
+  getLeaderboard: (params) => api.get('/leaderboard', { params }),
+  getUserRank: (userId) => api.get(`/leaderboard/user/${userId}`),
+  getStats: () => api.get('/leaderboard/stats'),
+  getTimeRanges: () => api.get('/leaderboard/time-ranges')
+};
+
+// Favorites API
+export const favoritesAPI = {
+  getFavorites: (params) => api.get('/favorites', { params }),
+  addFavorite: (questionId) => api.post('/favorites', { questionId }),
+  removeFavorite: (favoriteId) => api.delete(`/favorites/${favoriteId}`),
+  bulkRemoveFavorites: (favoriteIds) => api.delete('/favorites/bulk-remove', { data: { favoriteIds } })
+};
+
 // Payment API
 export const paymentAPI = {
   // QR Code operations

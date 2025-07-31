@@ -219,7 +219,7 @@ router.post('/users', [
     
     // Check if email or mobile already exists
     const existingUser = await dbMethods.get(db, 
-      'SELECT user_id FROM base_base_users_master WHERE email = ? OR mobile_number = ?', 
+      'SELECT user_id FROM base_users_master WHERE email = ? OR mobile_number = ?', 
       [email, mobile_number]
     );
     
@@ -233,7 +233,7 @@ router.post('/users', [
     
     // Create new user
     const result = await dbMethods.run(db, 
-      `INSERT INTO base_base_users_master (first_name, last_name, email, mobile_number, password_hash, is_active) 
+      `INSERT INTO base_users_master (first_name, last_name, email, mobile_number, password_hash, is_active) 
        VALUES (?, ?, ?, ?, ?, 1)`, 
       [first_name, last_name, email, mobile_number, hashedPassword]
     );
@@ -299,7 +299,7 @@ router.get('/users/:id', authenticateToken, checkPermissions(['user_view']), asy
     // Get user data
     const user = await dbMethods.get(db, 
       `SELECT user_id, first_name, last_name, email, mobile_number, is_active, created_at, updated_at 
-       FROM base_base_users_master WHERE user_id = ?`, 
+       FROM base_users_master WHERE user_id = ?`, 
       [userId]
     );
     
@@ -366,7 +366,7 @@ router.put('/users/:id', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if user exists
-    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM base_base_users_master WHERE user_id = ?', [userId]);
+    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM base_users_master WHERE user_id = ?', [userId]);
     if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
@@ -374,7 +374,7 @@ router.put('/users/:id', [
     // Check if email or mobile belongs to another user
     if (email) {
       const userWithEmail = await dbMethods.get(db, 
-        'SELECT user_id FROM base_base_users_master WHERE email = ? AND user_id != ?', 
+        'SELECT user_id FROM base_users_master WHERE email = ? AND user_id != ?', 
         [email, userId]
       );
       if (userWithEmail) {
@@ -384,7 +384,7 @@ router.put('/users/:id', [
     
     if (mobile_number) {
       const userWithMobile = await dbMethods.get(db, 
-        'SELECT user_id FROM base_base_users_master WHERE mobile_number = ? AND user_id != ?', 
+        'SELECT user_id FROM base_users_master WHERE mobile_number = ? AND user_id != ?', 
         [mobile_number, userId]
       );
       if (userWithMobile) {
@@ -423,7 +423,7 @@ router.put('/users/:id', [
     if (updateFields.length > 0) {
       updateValues.push(userId);
       await dbMethods.run(db, 
-        `UPDATE base_base_users_master SET ${updateFields.join(', ')} WHERE user_id = ?`, 
+        `UPDATE base_users_master SET ${updateFields.join(', ')} WHERE user_id = ?`, 
         updateValues
       );
     }
@@ -489,14 +489,14 @@ router.patch('/users/:id/status', [
     const eventBus = req.app.locals.eventBus;
     
     // Check if user exists
-    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM base_base_users_master WHERE user_id = ?', [userId]);
+    const existingUser = await dbMethods.get(db, 'SELECT user_id FROM base_users_master WHERE user_id = ?', [userId]);
     if (!existingUser) {
       return res.status(404).json({ error: 'User not found' });
     }
     
     // Update user status
     await dbMethods.run(db, 
-      'UPDATE base_base_users_master SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', 
+      'UPDATE base_users_master SET is_active = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?', 
       [is_active ? 1 : 0, userId]
     );
     
@@ -540,7 +540,7 @@ router.delete('/users/:id', authenticateToken, checkPermissions(['user_delete'])
     
     // Check if user exists
     const existingUser = await dbMethods.get(db, 
-      'SELECT user_id, email FROM base_base_users_master WHERE user_id = ?', 
+      'SELECT user_id, email FROM base_users_master WHERE user_id = ?', 
       [userId]
     );
     
@@ -550,7 +550,7 @@ router.delete('/users/:id', authenticateToken, checkPermissions(['user_delete'])
     
     // Don't allow deletion of the admin user
     const adminUser = await dbMethods.get(db, 
-      `SELECT u.user_id FROM base_base_users_master u 
+      `SELECT u.user_id FROM base_users_master u 
        JOIN base_user_roles_tx ur ON u.user_id = ur.user_id 
        JOIN base_roles_master r ON ur.role_id = r.role_id 
        WHERE u.user_id = ? AND r.name = 'Admin'`, 
@@ -561,9 +561,9 @@ router.delete('/users/:id', authenticateToken, checkPermissions(['user_delete'])
       return res.status(403).json({ error: 'Cannot delete the primary administrator account' });
     }
     
-    // Because of ON DELETE CASCADE constraints, deleting from base_base_users_master 
+    // Because of ON DELETE CASCADE constraints, deleting from base_users_master 
     // will automatically delete related records in other tables
-    await dbMethods.run(db, 'DELETE FROM base_base_users_master WHERE user_id = ?', [userId]);
+    await dbMethods.run(db, 'DELETE FROM base_users_master WHERE user_id = ?', [userId]);
     
     // Log activity
     eventBus.emit('log:activity', {

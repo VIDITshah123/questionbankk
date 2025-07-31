@@ -34,6 +34,17 @@ export const NotificationProvider = ({ children }) => {
     setNotifications([]);
   }, []);
 
+  // Helper function to show notifications with a simpler API
+  const showNotification = useCallback((message, type = 'info', options = {}) => {
+    return addNotification({
+      message,
+      type,
+      autoHide: true,
+      duration: 5000,
+      ...options
+    });
+  }, [addNotification]);
+
   return (
     <NotificationContext.Provider
       value={{
@@ -41,6 +52,7 @@ export const NotificationProvider = ({ children }) => {
         addNotification,
         removeNotification,
         clearAllNotifications,
+        showNotification, // Add the showNotification method to the context value
       }}
     >
       {children}

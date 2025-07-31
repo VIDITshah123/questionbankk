@@ -149,7 +149,7 @@ const getChartColors = (theme, count) => {
 const Dashboard = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  const { currentUser, permissions, hasPermission } = useAuth();
+  const { currentUser, permissions, hasPermission, roles = [] } = useAuth();
   const navigate = useNavigate();
   
   // State for loading and data
@@ -198,6 +198,19 @@ const Dashboard = () => {
       hasPermission(permissionSet)
     );
   }, [permissions, hasPermission]);
+  
+  // Check user roles
+  const isQuestionWriter = useMemo(() => {
+    return roles.includes('question_writer');
+  }, [roles]);
+  
+  const isReviewer = useMemo(() => {
+    return roles.includes('Reviewer');
+  }, [roles]);
+  
+  const isCompany = useMemo(() => {
+    return roles.includes('Company');
+  }, [roles]);
 
   // Fetch dashboard data
   const fetchDashboardData = async (isRefresh = false) => {
@@ -208,8 +221,8 @@ const Dashboard = () => {
         setIsRefreshing(true);
       }
       
-      // Simulate API calls with mock data
-      const mockStats = {
+      // Base mock data
+      const baseStats = {
         totalUsers: 1242,
         totalQuestions: 5432,
         totalCategories: 23,
@@ -217,11 +230,23 @@ const Dashboard = () => {
         activeUsers: 342,
         pendingReviews: 23,
         totalVotes: 12453,
-        accuracyRate: 87.5
+        accuracyRate: 87.5,
+        // Question writer specific stats
+        myQuestionsCount: 42,  // Number of questions created by this user
+        questionScore: 1280,   // Points based on question quality and usage
+        leaderboardRank: 7,     // Current rank among all question writers
+        // Reviewer specific stats
+        reviewScore: 950,        // Points based on review quality and quantity
+        reviewerRank: 12,        // Current rank among all reviewers
+        // Company specific stats
+        companyQuestionCount: 1243,      // Total questions from this company
+        companyAverageScore: 84,         // Average score of company's questions
+        questionWritersCount: 8,         // Number of question writers in the company
+        reviewersCount: 5                // Number of reviewers in the company
       };
       
       // Set stats
-      setStats(mockStats);
+      setStats(baseStats);
       
       // Generate activity data (last 7 days)
       const dateLabels = generateDateLabels(7);
@@ -364,10 +389,24 @@ const Dashboard = () => {
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
         <Box>
           <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
-            Dashboard
+            {isQuestionWriter 
+              ? 'Question Writer Dashboard' 
+              : isReviewer 
+                ? 'Reviewer Dashboard' 
+                : isCompany
+                  ? 'Company Dashboard'
+                  : 'Dashboard'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Welcome back, {currentUser?.firstName || 'User'}! Here's what's happening with your account.
+            Welcome back, {currentUser?.companyName || currentUser?.firstName || 'User'}! {
+              isQuestionWriter 
+                ? 'Manage your questions and track your progress.' 
+                : isReviewer 
+                  ? 'Review questions and track your performance.'
+                  : isCompany
+                    ? 'View your company\'s performance and team metrics.'
+                    : "Here's what's happening with your account."
+            }
           </Typography>
         </Box>
         <Box>
@@ -384,7 +423,144 @@ const Dashboard = () => {
         </Box>
       </Box>
 
-      {/* Stats Cards */}
+      {/* Company Dashboard */}
+      {isCompany && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
+            Company Overview
+          </Typography>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* Question Counts */}
+            <Grid item xs={12} md={3}>
+              <StatCard
+                title="Total Questions"
+                value={stats.companyQuestionCount?.toLocaleString() || '0'}
+                icon={<QuestionIcon />}
+                color="primary"
+                onClick={() => navigate('/company/questions')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            {/* Question Scoreboard */}
+            <Grid item xs={12} md={3}>
+              <StatCard
+                title="Average Score"
+                value={`${stats.companyAverageScore || '0'}%`}
+                icon={<TrendingUpIcon />}
+                color="success"
+                onClick={() => navigate('/company/scoreboard')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            {/* Team Stats */}
+            <Grid item xs={12} md={3}>
+              <StatCard
+                title="Question Writers"
+                value={stats.questionWritersCount?.toLocaleString() || '0'}
+                icon={<PersonIcon />}
+                color="info"
+                onClick={() => navigate('/company/team/writers')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={3}>
+              <StatCard
+                title="Reviewers"
+                value={stats.reviewersCount?.toLocaleString() || '0'}
+                icon={<PeopleIcon />}
+                color="warning"
+                onClick={() => navigate('/company/team/reviewers')}
+                loading={isRefreshing}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Reviewer Dashboard */}
+      {isReviewer && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
+            Review Dashboard
+          </Typography>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* Question Scoreboard */}
+            <Grid item xs={12} md={6}>
+              <StatCard
+                title="Review Score"
+                value={`${stats.reviewScore || '0'} pts`}
+                icon={<TrendingUpIcon />}
+                color="info"
+                onClick={() => navigate('/reviewer/score')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            {/* Leaderboard */}
+            <Grid item xs={12} md={6}>
+              <StatCard
+                title="Your Rank"
+                value={`#${stats.reviewerRank || '-'}`}
+                icon={<LeaderboardIcon />}
+                color="warning"
+                onClick={() => navigate('/reviewer/leaderboard')}
+                loading={isRefreshing}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Question Writer Dashboard */}
+      {isQuestionWriter && (
+        <Box sx={{ mb: 4 }}>
+          <Typography variant="h6" component="h2" sx={{ mb: 2, fontWeight: 600 }}>
+            Your Question Writing Dashboard
+          </Typography>
+          <Grid container spacing={3} sx={{ mb: 4 }}>
+            {/* My Questions Card */}
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="My Questions"
+                value={stats.myQuestionsCount?.toLocaleString() || '0'}
+                icon={<QuestionIcon />}
+                color="primary"
+                onClick={() => navigate('/my-questions')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            {/* Question Scoreboard */}
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="Question Score"
+                value={`${stats.questionScore || '0'} pts`}
+                icon={<TrendingUpIcon />}
+                color="success"
+                onClick={() => navigate('/my-score')}
+                loading={isRefreshing}
+              />
+            </Grid>
+
+            {/* Leaderboard */}
+            <Grid item xs={12} md={4}>
+              <StatCard
+                title="Your Rank"
+                value={`#${stats.leaderboardRank || '-'}`}
+                icon={<LeaderboardIcon />}
+                color="warning"
+                onClick={() => navigate('/leaderboard')}
+                loading={isRefreshing}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+      )}
+
+      {/* Regular Dashboard Stats */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {/* Total Questions */}
         {hasPermission(cardPermissions.questions) && (
